@@ -274,7 +274,11 @@ function Window:focus()
   vim.api.nvim_set_current_win(self.id)
 end
 
-function Window:buffer()
+function Window:is_focused()
+  return self.id == vim.api.nvim_get_current_win()
+end
+
+function Window:get_buffer()
   return vim.api.nvim_win_get_buf(self.id)
 end
 
@@ -305,17 +309,49 @@ function Window:swap(direction)
   if not neighbor then
     return false
   end
-  local current_buf = self:buffer()
-  local neighbor_buf = neighbor:buffer()
+  local current_buf = self:get_buffer()
+  local neighbor_buf = neighbor:get_buffer()
   self:set_buffer(neighbor_buf)
   neighbor:set_buffer(current_buf)
   return true
 end
 
+function Window:is_open()
+  return self.id ~= nil and vim.api.nvim_win_is_valid(self.id)
+end
+
+-- Closes the window if it's open
+function Window:close()
+  if not self:is_open() then
+    return
+  end
+  vim.api.nvim_win_close(self.id, true)
+  self.id = nil
+end
+
 M.Window = Window
+
+M.list_tab = function(tabnr)
+  local wins = vim.api.nvim_tabpage_list_wins(tabnr or 0)
+  local result = {}
+  for _, id in ipairs(wins) do
+    -- Filter out floating windows
+    if not utils.is_relative(id) then
+      table.insert(result, Window.new(id))
+    end
+  end
+  return result
+end
 
 -- Returns a new window
 M.new = function(id)
+  return Window.new(id)
+end
+
+-- Opens a new window with the given options and returns a Window object
+M.open = function(opts)
+  opts = opts or {}
+  local id = vim.api.nvim_open_win(opts.bufnr or 0, opts.enter or false, opts.config or {})
   return Window.new(id)
 end
 
