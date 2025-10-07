@@ -100,9 +100,8 @@ function Window:neighbors()
 
   -- Collect all non-floating windows except the current one
   for _, other_id in ipairs(wins) do
-    local other_conf = vim.api.nvim_win_get_config(other_id)
-    -- Filter out floating windows (relative is not empty for floats)
-    if other_id ~= self.id and other_conf.relative == "" then
+    -- Filter out floating windows
+    if other_id ~= self.id and not utils.is_relative(other_id) then
       local other = Window:new(other_id)
 
       -- Check if the other window is directly above
@@ -269,6 +268,48 @@ function Window:relative_resize(direction, amount)
 
   local side = resize_direction_to_side[direction]
   self["resize_" .. side](self, amount)
+end
+
+function Window:focus()
+  vim.api.nvim_set_current_win(self.id)
+end
+
+function Window:buffer()
+  return vim.api.nvim_win_get_buf(self.id)
+end
+
+function Window:set_buffer(bufnr)
+  vim.validate('bufnr', bufnr, 'number')
+  vim.api.nvim_win_set_buf(self.id, bufnr)
+end
+
+function Window:move(direction)
+  vim.validate { direction = { direction, 'string' } }
+  local letter = direction_to_letter[direction]
+  if not letter then
+    error(string.format("Invalid direction '%s'. Valid directions are: %s", direction,
+      table.concat(vim.tbl_keys(direction_to_letter), ", ")))
+  end
+  local cmd = string.format("wincmd %s", letter:upper())
+  vim.cmd(cmd)
+end
+
+function Window:swap(direction)
+  vim.validate { direction = { direction, 'string' } }
+  local letter = direction_to_letter[direction]
+  if not letter then
+    error(string.format("Invalid direction '%s'. Valid directions are: %s", direction,
+      table.concat(vim.tbl_keys(direction_to_letter), ", ")))
+  end
+  local neighbor = self:neighbor(direction)
+  if not neighbor then
+    return false
+  end
+  local current_buf = self:buffer()
+  local neighbor_buf = neighbor:buffer()
+  self:set_buffer(neighbor_buf)
+  neighbor:set_buffer(current_buf)
+  return true
 end
 
 M.Window = Window
