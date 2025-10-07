@@ -96,14 +96,12 @@ function Window:neighbors()
     down = {},
   }
 
-  local wins = vim.api.nvim_list_wins()
+  local wins = M.list_tab()
 
   -- Collect all non-floating windows except the current one
-  for _, other_id in ipairs(wins) do
+  for _, other in ipairs(wins) do
     -- Filter out floating windows
-    if other_id ~= self.id and not utils.is_relative(other_id) then
-      local other = Window.new(other_id)
-
+    if other.id ~= self.id and not utils.is_relative(other.id) then
       -- Check if the other window is directly above
       if other:is_above(self) then
         table.insert(neighbors.up, other)
