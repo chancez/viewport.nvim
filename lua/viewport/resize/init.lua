@@ -21,7 +21,9 @@ local resize_mode = nil
 
 M.setup = function(input_cfg)
   config = vim.tbl_deep_extend('force', default_config, input_cfg or {})
-  resize_mode = mode.new(config.mappings)
+  resize_mode = mode.new({
+    mappings = config.mappings,
+  })
 end
 
 M.start = function()

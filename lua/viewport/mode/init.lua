@@ -5,16 +5,21 @@ local M = {}
 local Mode = {}
 Mode.__index = Mode
 
-function Mode:new(keymaps)
-  local instance = setmetatable({}, Mode)
-  instance.active = false
-  instance.current_mappings = {}
-  instance.keymaps = keymaps or {}
-  -- Check for a 'stop mapping', if not present add <Esc> as default
-  if not vim.tbl_contains(vim.tbl_values(instance.keymaps), 'stop') then
-    instance.keymaps['<Esc>'] = 'stop'
-  end
-  return instance
+function Mode.new(config)
+  config = config or {}
+  local self = setmetatable({}, Mode)
+  self.active = false
+  self.current_mappings = {}
+  self.config = vim.tbl_extend('keep', config, {
+    mappings = {
+      ['<Esc>'] = 'stop',
+    },
+    pre_start = function() end,
+    post_start = function() end,
+    pre_stop = function() end,
+    post_stop = function() end,
+  })
+  return self
 end
 
 function Mode:start(opts)
@@ -22,9 +27,10 @@ function Mode:start(opts)
     return
   end
   self.active = true
+  self.config.pre_start()
 
   local mapping_opts = { silent = true }
-  local it = vim.iter(self.keymaps)
+  local it = vim.iter(self.config.mappings)
   self.current_mappings = it:map(function(lhs, action)
     return {
       lhs = lhs,
@@ -33,14 +39,20 @@ function Mode:start(opts)
         if action == 'stop' then
           self:stop()
         else
-          action(opts)
+          -- Allow actions to stop the mode by returning true
+          if action(opts) == true then
+            self:stop()
+          end
         end
       end, mapping_opts),
     }
   end):totable()
+
+  self.config.post_start()
 end
 
 function Mode:stop()
+  self.config.pre_stop()
   -- restore old mappings
   for _, mapping in ipairs(self.current_mappings) do
     if next(mapping.old) ~= nil then
@@ -50,13 +62,14 @@ function Mode:stop()
       vim.keymap.del('n', mapping.lhs)
     end
   end
+  self.config.post_stop()
   self.current_mappings = {}
   self.active = false
 end
 
 M.Mode = Mode
-M.new = function(keymaps)
-  return Mode:new(keymaps)
+M.new = function(config)
+  return Mode.new(config)
 end
 
 return M
