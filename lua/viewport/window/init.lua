@@ -162,6 +162,7 @@ function Window:neighbor(direction)
 end
 
 function Window:resize_top(amount)
+  vim.validate('amount', amount, 'number')
   amount = amount or 1
   -- Decrease the size of the window above us
   local neighbor = self:neighbor("above")
@@ -171,6 +172,7 @@ function Window:resize_top(amount)
 end
 
 function Window:resize_bottom(amount)
+  vim.validate('amount', amount, 'number')
   amount = amount or 1
   -- Only resize in a direction if it's possible
   -- If we don't have a neighbor below us, we can't grow "down".
@@ -185,6 +187,7 @@ function Window:resize_bottom(amount)
 end
 
 function Window:resize_right(amount)
+  vim.validate('amount', amount, 'number')
   amount = amount or 1
   -- Only resize in a direction if it's possible
   -- If we don't have a neighbor to our right, we can't grow "right".
@@ -199,6 +202,7 @@ function Window:resize_right(amount)
 end
 
 function Window:resize_left(amount)
+  vim.validate('amount', amount, 'number')
   amount = amount or 1
   -- Decrease the size of the window to our left
   local neighbor = self:neighbor("left")
