@@ -1,28 +1,18 @@
-local window = require('viewport.window')
+local actions = require('viewport.resize.actions')
 local keymap = require('viewport.resize.keymap')
 
 local M = {}
 
-M.resize = function(direction, amount, win_id)
-  local win = window.new(win_id)
-  win:resize(direction, amount)
-end
-
-M.relative_resize = function(direction, amount, win_id)
-  local win = window.new(win_id)
-  win:relative_resize(direction, amount)
-end
+M.actions = actions
 
 local default_config = {
-  vertical_resize_amount = 1,
-  horizontal_resize_amount = 1,
-  relative_resizing = false,
+  resize_amount = 1,
   mappings = {
-    up = 'k',
-    down = 'j',
-    left = 'h',
-    right = 'l',
-    stop_resizing = '<Esc>',
+    ['k'] = actions.resize_up,
+    ['j'] = actions.resize_down,
+    ['h'] = actions.resize_left,
+    ['l'] = actions.resize_right,
+    ['<Esc>'] = 'stop',
   },
 }
 
@@ -43,43 +33,31 @@ function Resizer:start()
   end
   self.active = true
 
-  local resize_func = M.resize
-  if self.cfg.relative_resizing then
-    resize_func = M.relative_resize
-  end
-  local resize_mappings = {
-    -- Positive mappings
-    { key = self.cfg.mappings.up,            dir = "up",                       amount = self.cfg.vertical_resize_amount,    func = resize_func },
-    { key = self.cfg.mappings.down,          dir = "down",                     amount = self.cfg.vertical_resize_amount,    func = resize_func },
-    { key = self.cfg.mappings.left,          dir = "left",                     amount = self.cfg.horizontal_resize_amount,  func = resize_func },
-    { key = self.cfg.mappings.right,         dir = "right",                    amount = self.cfg.horizontal_resize_amount,  func = resize_func },
-    -- negative mappings
-    { key = self.cfg.mappings.up:upper(),    dir = "up",                       amount = -self.cfg.vertical_resize_amount,   func = resize_func },
-    { key = self.cfg.mappings.down:upper(),  dir = "down",                     amount = -self.cfg.vertical_resize_amount,   func = resize_func },
-    { key = self.cfg.mappings.left:upper(),  dir = "left",                     amount = -self.cfg.horizontal_resize_amount, func = resize_func },
-    { key = self.cfg.mappings.right:upper(), dir = "right",                    amount = -self.cfg.horizontal_resize_amount, func = resize_func },
-    { key = self.cfg.mappings.stop_resizing, func = function() self:stop() end },
+  -- TODO Move this
+  local opts = {
+    resize_amount = self.cfg.resize_amount,
   }
 
   local mapping_opts = { silent = true }
-  local it = vim.iter(resize_mappings)
-  it:map(function(mapping)
+  local it = vim.iter(self.cfg.mappings)
+  self.current_mappings = it:map(function(lhs, action)
     return {
-      lhs = mapping.key,
+      lhs = lhs,
       -- map returns the existing mapping so we can restore it later
-      old = keymap.set('n', mapping.key, function()
-        mapping.func(mapping.dir, mapping.amount)
+      old = keymap.set('n', lhs, function()
+        if action == 'stop' then
+          self:stop()
+        else
+          action(opts)
+        end
       end, mapping_opts),
     }
-  end)
-  it:totable()
-
-  self.current_mappings = it
+  end):totable()
 end
 
 function Resizer:stop()
   -- restore old mappings
-  for mapping in self.current_mappings do
+  for _, mapping in ipairs(self.current_mappings) do
     if next(mapping.old) ~= nil then
       vim.fn.mapset(mapping.old)
     else
@@ -92,5 +70,21 @@ function Resizer:stop()
 end
 
 M.Resizer = Resizer
+
+local default_instance = nil
+
+M.setup = function(cfg)
+  if default_instance == nil then
+    default_instance = Resizer:new(cfg)
+  end
+end
+
+M.start_resizer = function()
+  if default_instance == nil then
+    vim.notify("Viewport Resize not setup. Call require('viewport.resize').setup() first.", vim.log.levels.WARN)
+    return
+  end
+  default_instance:start()
+end
 
 return M
