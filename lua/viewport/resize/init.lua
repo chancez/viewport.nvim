@@ -1,5 +1,5 @@
 local actions = require('viewport.resize.actions')
-local keymap = require('viewport.resize.keymap')
+local mode = require('viewport.mode')
 
 local M = {}
 
@@ -16,75 +16,21 @@ local default_config = {
   },
 }
 
-local Resizer = {}
-Resizer.__index = Resizer
+local config = {}
+local resize_mode = nil
 
-function Resizer:new(cfg)
-  local instance = setmetatable({}, Resizer)
-  instance.active = false
-  instance.current_mappings = {}
-  instance.cfg = vim.tbl_deep_extend('force', default_config, cfg)
-  return instance
+M.setup = function(input_cfg)
+  config = vim.tbl_deep_extend('force', default_config, input_cfg or {})
+  resize_mode = mode.new(config.mappings)
 end
 
-function Resizer:start()
-  if self.active then
-    return
+M.start = function()
+  if resize_mode == nil then
+    error("Resize mode not initialized. Please call setup() first.")
   end
-  self.active = true
-
-  -- TODO Move this
-  local opts = {
-    resize_amount = self.cfg.resize_amount,
-  }
-
-  local mapping_opts = { silent = true }
-  local it = vim.iter(self.cfg.mappings)
-  self.current_mappings = it:map(function(lhs, action)
-    return {
-      lhs = lhs,
-      -- map returns the existing mapping so we can restore it later
-      old = keymap.set('n', lhs, function()
-        if action == 'stop' then
-          self:stop()
-        else
-          action(opts)
-        end
-      end, mapping_opts),
-    }
-  end):totable()
-end
-
-function Resizer:stop()
-  -- restore old mappings
-  for _, mapping in ipairs(self.current_mappings) do
-    if next(mapping.old) ~= nil then
-      vim.fn.mapset(mapping.old)
-    else
-      -- Mapping was empty so delete the new temporary mapping
-      vim.keymap.del('n', mapping.lhs)
-    end
-  end
-  self.current_mappings = {}
-  self.active = false
-end
-
-M.Resizer = Resizer
-
-local default_instance = nil
-
-M.setup = function(cfg)
-  if default_instance == nil then
-    default_instance = Resizer:new(cfg)
-  end
-end
-
-M.start_resizer = function()
-  if default_instance == nil then
-    vim.notify("Viewport Resize not setup. Call require('viewport.resize').setup() first.", vim.log.levels.WARN)
-    return
-  end
-  default_instance:start()
+  resize_mode:start({
+    amount = config.resize_amount,
+  })
 end
 
 return M
