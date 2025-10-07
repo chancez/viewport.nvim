@@ -7,10 +7,10 @@ local M = {}
 local Window = {}
 Window.__index = Window
 
-function Window:new(id)
-  local instance = setmetatable({}, Window)
-  instance.id = id or vim.api.nvim_get_current_win()
-  return instance
+function Window.new(id)
+  local self = setmetatable({}, Window)
+  self.id = id or vim.api.nvim_get_current_win()
+  return self
 end
 
 function Window:__tostring()
@@ -102,7 +102,7 @@ function Window:neighbors()
   for _, other_id in ipairs(wins) do
     -- Filter out floating windows
     if other_id ~= self.id and not utils.is_relative(other_id) then
-      local other = Window:new(other_id)
+      local other = Window.new(other_id)
 
       -- Check if the other window is directly above
       if other:is_above(self) then
@@ -156,7 +156,7 @@ function Window:neighbor(direction)
   if id == self.id then
     return false
   end
-  local neighbor = Window:new(id)
+  local neighbor = Window.new(id)
   return neighbor
 end
 
@@ -316,7 +316,7 @@ M.Window = Window
 
 -- Returns a new window
 M.new = function(id)
-  return Window:new(id)
+  return Window.new(id)
 end
 
 return M
