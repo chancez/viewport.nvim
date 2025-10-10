@@ -285,6 +285,17 @@ function Window:set_buffer(bufnr)
   vim.api.nvim_win_set_buf(self.id, bufnr)
 end
 
+function Window:delete_buffer()
+  local buf = self:get_buffer()
+  if buf and vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+    -- Unset the window id since the window is now invalid
+    self.id = nil
+    return true
+  end
+  return false
+end
+
 function Window:move(direction)
   vim.validate { direction = { direction, 'string' } }
   local letter = direction_to_letter[direction]
