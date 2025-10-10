@@ -353,9 +353,7 @@ M.list_tab = function(tabnr)
 end
 
 -- Returns a new window
-M.new = function(id)
-  return Window.new(id)
-end
+M.new = Window.new
 
 -- Opens a new window with the given options and returns a Window object
 M.open = function(opts)
