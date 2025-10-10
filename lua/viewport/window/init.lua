@@ -83,14 +83,14 @@ end
 -- @param other Window The other window to check against
 -- @return boolean True if the windows touch
 function Window:left_touches(other)
-  return other:right() == (self:left() - 1)
+  return (self:left() - 1) == other:right()
 end
 
 -- Checks if this window's right edge touches another window's left edge
 -- @param other Window The other window to check against
 -- @return boolean True if the windows touch
 function Window:right_touches(other)
-  return (other:left() - 1) == self:right()
+  return self:right() == (other:left() - 1)
 end
 
 -- Checks if this window's horizontal sides are within another window's bounds
