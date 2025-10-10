@@ -5,21 +5,22 @@ local M = {}
 local Mode = {}
 Mode.__index = Mode
 
+local default_mode_opts = {
+  mappings = {
+    ['<Esc>'] = 'stop',
+  },
+  mapping_opts = {},
+  pre_start = function() end,
+  post_start = function() end,
+  pre_stop = function() end,
+  post_stop = function() end,
+}
+
 function Mode.new(config)
-  config = config or {}
   local self = setmetatable({}, Mode)
   self.active = false
   self.current_mappings = {}
-  self.config = vim.tbl_extend('keep', config, {
-    mappings = {
-      ['<Esc>'] = 'stop',
-    },
-    mapping_opts = {},
-    pre_start = function() end,
-    post_start = function() end,
-    pre_stop = function() end,
-    post_stop = function() end,
-  })
+  self.config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
   return self
 end
 
