@@ -41,7 +41,7 @@ end
 -- @error Throws an error if setup() has not been called first
 M.start = function()
   if navigate_mode == nil then
-    error("select mode not initialized. Please call setup() first.")
+    error("navigate mode not initialized. Please call setup() first.")
   end
   navigate_mode:start({})
 end
