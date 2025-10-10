@@ -172,13 +172,13 @@ function Window:resize_bottom(amount)
   vim.validate('amount', amount, 'number')
   amount = amount or 1
   -- Only resize in a direction if it's possible
-  -- If we don't have a neighbor below us, we can't grow "down".
-  -- Doing so would result in growing "up".
-  if amount > 0 then
-    local neighbor = self:neighbor("below")
-    if not neighbor then
-      return
-    end
+  -- If we don't have a neighbor below us, we can't "grow down".
+  -- Doing so would result in "growing up".
+  -- We also should not attempt to "shrink up" without the bottom neighbor.
+  -- This results in the buffer shrinking, but without anything to take up the space.
+  local neighbor = self:neighbor("below")
+  if not neighbor then
+    return
   end
   vim.api.nvim_win_set_height(self.id, self:height() + amount)
 end
@@ -244,15 +244,20 @@ function Window:relative_resize(direction, amount)
   }
   amount = amount or 1
 
+  local opposite_direction = opposite_directions[direction]
   -- Right and down are 'priority' directions. If we can grow in that
   -- direction, we do, unless there's no where to grow in that direction, then we shrink
   if direction == "right" or direction == "down" then
     amount = self:neighbor(direction) and amount or -amount
+    -- If we do not have a neighbor in the direction we're changing, then
+    -- inverting the direction is logically simpler.
+    -- Instead of shrinking the side we don't have a neighbor which actually
+    -- results in "growing", we should grow the opposite side, which is more intuitive.
+    direction = self:neighbor(direction) and direction or opposite_direction
   else
     -- Up and left are different, we need to check if we have a neighbor on
     -- both sides, if we do, we shrink, otherwise we grow if we have a neighbor
     -- in the direction specified.
-    local opposite_direction = opposite_directions[direction]
     if self:neighbor(direction) and self:neighbor(opposite_direction) then
       -- Shrink the opposite side
       direction = opposite_direction
