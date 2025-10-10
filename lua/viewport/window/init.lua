@@ -245,28 +245,22 @@ function Window:relative_resize(direction, amount)
   amount = amount or 1
 
   local opposite_direction = opposite_directions[direction]
-  -- Right and down are 'priority' directions. If we can grow in that
-  -- direction, we do, unless there's no where to grow in that direction, then we shrink
-  if direction == "right" or direction == "down" then
+  -- Up and left are special, we need to check if we have a neighbor on
+  -- both sides, if we do, we shrink,
+  -- Otherwise we grow if we have a neighbor in the direction specified.
+  if (direction == 'up' or direction == 'left') and self:neighbor(direction) and self:neighbor(opposite_direction) then
+    -- Shrink the opposite side
+    amount = -amount
+    direction = opposite_direction
+  else
+    -- Update amount before we change the direction below, as this relies on
+    -- knowing the original direction.
     amount = self:neighbor(direction) and amount or -amount
     -- If we do not have a neighbor in the direction we're changing, then
     -- inverting the direction is logically simpler.
     -- Instead of shrinking the side we don't have a neighbor which actually
     -- results in "growing", we should grow the opposite side, which is more intuitive.
     direction = self:neighbor(direction) and direction or opposite_direction
-  else
-    -- Up and left are different, we need to check if we have a neighbor on
-    -- both sides, if we do, we shrink, otherwise we grow if we have a neighbor
-    -- in the direction specified.
-    if self:neighbor(direction) and self:neighbor(opposite_direction) then
-      -- Shrink the opposite side
-      direction = opposite_direction
-      amount = -amount
-    else
-      -- Grow if we have a neighbor in the specified direction, otherwise shrink
-      amount = self:neighbor(direction) and amount or -amount
-      direction = self:neighbor(direction) and direction or opposite_direction
-    end
   end
 
   local side = resize_direction_to_side[direction]
