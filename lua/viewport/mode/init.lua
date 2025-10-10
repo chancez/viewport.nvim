@@ -2,9 +2,23 @@ local keymap = require('viewport.mode.keymap')
 
 local M = {}
 
+-- @class Mode
+-- @field active boolean Whether the mode is currently active
+-- @field current_mappings table List of current key mappings
+-- @field config ModeConfig The mode configuration
 local Mode = {}
 Mode.__index = Mode
 
+-- @class ModeConfig
+-- @field mappings table Table of key mappings for the mode
+-- @field mapping_opts table Options to pass to vim.keymap.set
+-- @field pre_start function Function called before mode starts
+-- @field post_start function Function called after mode starts
+-- @field pre_stop function Function called before mode stops
+-- @field post_stop function Function called after mode stops
+
+-- Default configuration for modes
+-- @type ModeConfig
 local default_mode_opts = {
   mappings = {
     ['<Esc>'] = 'stop',
@@ -16,6 +30,9 @@ local default_mode_opts = {
   post_stop = function() end,
 }
 
+-- Creates a new Mode instance
+-- @param config ModeConfig|nil Configuration for the mode
+-- @return Mode A new Mode instance
 function Mode.new(config)
   local self = setmetatable({}, Mode)
   self.active = false
@@ -24,6 +41,8 @@ function Mode.new(config)
   return self
 end
 
+-- Starts the mode, activating key mappings and calling lifecycle hooks
+-- @param opts table|nil Options to pass to action functions
 function Mode:start(opts)
   if self.active then
     return
@@ -53,6 +72,7 @@ function Mode:start(opts)
   self.config.post_start()
 end
 
+-- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
   self.config.pre_stop()
   -- restore old mappings
@@ -70,6 +90,10 @@ function Mode:stop()
 end
 
 M.Mode = Mode
+
+-- Creates a new Mode instance
+-- @param config ModeConfig|nil Configuration for the mode
+-- @return Mode A new Mode instance
 M.new = function(config)
   return Mode.new(config)
 end

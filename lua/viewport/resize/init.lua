@@ -5,6 +5,14 @@ local M = {}
 
 M.actions = actions
 
+-- @class ResizeConfig
+-- @field resize_amount number The default amount to resize by
+-- @field mappings table|ResizeMappings Configuration for key mappings
+
+-- @class ResizeMappings
+-- @field preset string|nil Preset configuration ('absolute' or 'relative')
+
+-- Preset key mappings for different resize modes
 local preset_mappings = {
   absolute = {
     ['k'] = actions.resize_up,
@@ -22,6 +30,8 @@ local preset_mappings = {
   },
 }
 
+-- Default configuration for resize mode
+-- @type ResizeConfig
 local default_config = {
   resize_amount = 1,
   mappings = {
@@ -32,6 +42,9 @@ local default_config = {
 local config = {}
 local resize_mode = nil
 
+-- Sets up the resize mode with the given configuration
+-- @param input_cfg ResizeConfig|nil Configuration table to merge with defaults
+-- @error Throws an error if an invalid preset is specified
 M.setup = function(input_cfg)
   config = vim.tbl_deep_extend('force', default_config, input_cfg or {})
   --
@@ -52,6 +65,8 @@ M.setup = function(input_cfg)
   })
 end
 
+-- Starts the resize mode
+-- @error Throws an error if setup() has not been called first
 M.start = function()
   if resize_mode == nil then
     error("Resize mode not initialized. Please call setup() first.")

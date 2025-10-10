@@ -3,91 +3,142 @@ local utils = require('viewport.window.utils')
 local M = {}
 
 -- @class Window
--- @field id The window id
+-- @field id number The window id
 local Window = {}
 Window.__index = Window
 
+-- Creates a new Window instance
+-- @param id number|nil The window id (defaults to current window)
+-- @return Window A new Window instance
 function Window.new(id)
   local self = setmetatable({}, Window)
   self.id = id or vim.api.nvim_get_current_win()
   return self
 end
 
+-- Returns a string representation of the window
+-- @return string String representation showing window id
 function Window:__tostring()
   return string.format("Window(id=%d)", self.id)
 end
 
+-- Returns detailed information about the window
+-- @return string Detailed string with position and size information
 function Window:details()
   return string.format("Window(id=%d, top=%d, bottom=%d, left=%d, right=%d, height=%d, width=%d)",
     self.id, self:top(), self:bottom(), self:left(), self:right(), self:height(), self:width())
 end
 
+-- Gets the top position of the window
+-- @return number The row position of the top edge
 function Window:top()
   return vim.api.nvim_win_get_position(self.id)[1]
 end
 
+-- Gets the bottom position of the window
+-- @return number The row position of the bottom edge
 function Window:bottom()
   return self:top() + self:height()
 end
 
+-- Gets the left position of the window
+-- @return number The column position of the left edge
 function Window:left()
   return vim.api.nvim_win_get_position(self.id)[2]
 end
 
+-- Gets the right position of the window
+-- @return number The column position of the right edge
 function Window:right()
   return self:left() + self:width()
 end
 
+-- Gets the height of the window
+-- @return number The height in rows
 function Window:height()
   return vim.api.nvim_win_get_height(self.id)
 end
 
+-- Gets the width of the window
+-- @return number The width in columns
 function Window:width()
   return vim.api.nvim_win_get_width(self.id)
 end
 
+-- Checks if this window's top edge touches another window's bottom edge
+-- @param other Window The other window to check against
+-- @return boolean True if the windows touch
 function Window:top_touches(other)
   return (other:bottom() + 1) == self:top()
 end
 
+-- Checks if this window's bottom edge touches another window's top edge
+-- @param other Window The other window to check against
+-- @return boolean True if the windows touch
 function Window:bottom_touches(other)
   return other:top() == (self:bottom() + 1)
 end
 
+-- Checks if this window's left edge touches another window's right edge
+-- @param other Window The other window to check against
+-- @return boolean True if the windows touch
 function Window:left_touches(other)
   return other:right() == (self:left() - 1)
 end
 
+-- Checks if this window's right edge touches another window's left edge
+-- @param other Window The other window to check against
+-- @return boolean True if the windows touch
 function Window:right_touches(other)
   return (other:left() - 1) == self:right()
 end
 
+-- Checks if this window's horizontal sides are within another window's bounds
+-- @param other Window The other window to check against
+-- @return boolean True if any horizontal side is within the other window
 function Window:horizontal_sides_within(other)
   return utils.within(self:left(), other:left(), other:right()) or
       utils.within(self:right(), other:left(), other:right())
 end
 
+-- Checks if this window's vertical sides are within another window's bounds
+-- @param other Window The other window to check against
+-- @return boolean True if any vertical side is within the other window
 function Window:vertical_sides_within(other)
   return utils.within(self:top(), other:top(), other:bottom()) or
       utils.within(self:bottom(), other:top(), other:bottom())
 end
 
+-- Checks if this window is directly above another window
+-- @param other Window The other window to check against
+-- @return boolean True if this window is above the other
 function Window:is_above(other)
   return self:bottom_touches(other) and (self:horizontal_sides_within(other) or other:horizontal_sides_within(self))
 end
 
+-- Checks if this window is directly below another window
+-- @param other Window The other window to check against
+-- @return boolean True if this window is below the other
 function Window:is_below(other)
   return self:top_touches(other) and (self:horizontal_sides_within(other) or other:horizontal_sides_within(self))
 end
 
+-- Checks if this window is directly left of another window
+-- @param other Window The other window to check against
+-- @return boolean True if this window is left of the other
 function Window:is_left_of(other)
   return self:right_touches(other) and (self:vertical_sides_within(other) or other:vertical_sides_within(self))
 end
 
+-- Checks if this window is directly right of another window
+-- @param other Window The other window to check against
+-- @return boolean True if this window is right of the other
 function Window:is_right_of(other)
   return self:left_touches(other) and (self:vertical_sides_within(other) or other:vertical_sides_within(self))
 end
 
+-- Gets all neighboring windows in each direction
+-- @return table Table with keys 'left', 'right', 'up', 'down' containing arrays of Window objects
 function Window:neighbors()
   local neighbors = {
     left = {},
@@ -127,6 +178,7 @@ function Window:neighbors()
   return neighbors
 end
 
+-- Mapping of direction names to vim direction letters
 local direction_to_letter = {
   left   = "h",
   right  = "l",
@@ -138,6 +190,9 @@ local direction_to_letter = {
   bottom = "j",
 }
 
+-- Gets the neighboring window in a specific direction
+-- @param direction string The direction to look ("left", "right", "up", "down", etc.)
+-- @return Window|false The neighboring window or false if none exists
 function Window:neighbor(direction)
   local letter = direction_to_letter[direction]
   if not letter then
@@ -158,6 +213,8 @@ function Window:neighbor(direction)
   return neighbor
 end
 
+-- Resizes the window from the top edge
+-- @param amount number The amount to resize by (positive to grow down)
 function Window:resize_top(amount)
   vim.validate('amount', amount, 'number')
   amount = amount or 1
@@ -168,6 +225,8 @@ function Window:resize_top(amount)
   end
 end
 
+-- Resizes the window from the bottom edge
+-- @param amount number The amount to resize by (positive to grow down)
 function Window:resize_bottom(amount)
   vim.validate('amount', amount, 'number')
   amount = amount or 1
@@ -183,6 +242,8 @@ function Window:resize_bottom(amount)
   vim.api.nvim_win_set_height(self.id, self:height() + amount)
 end
 
+-- Resizes the window from the right edge
+-- @param amount number The amount to resize by (positive to grow right)
 function Window:resize_right(amount)
   vim.validate('amount', amount, 'number')
   amount = amount or 1
@@ -198,6 +259,8 @@ function Window:resize_right(amount)
   vim.api.nvim_win_set_width(self.id, self:width() + amount)
 end
 
+-- Resizes the window from the left edge
+-- @param amount number The amount to resize by (positive to grow left)
 function Window:resize_left(amount)
   vim.validate('amount', amount, 'number')
   amount = amount or 1
@@ -208,6 +271,7 @@ function Window:resize_left(amount)
   end
 end
 
+-- Mapping of resize directions to side methods
 local resize_direction_to_side = {
   up    = "top",
   down  = "bottom",
@@ -215,6 +279,7 @@ local resize_direction_to_side = {
   right = "right",
 }
 
+-- Mapping of directions to their opposites
 local opposite_directions = {
   up    = "down",
   down  = "up",
@@ -222,6 +287,9 @@ local opposite_directions = {
   right = "left",
 }
 
+-- Resizes the window in a specific direction
+-- @param direction string The direction to resize ("up", "down", "left", "right")
+-- @param amount number The amount to resize by
 function Window:resize(direction, amount)
   vim.validate {
     direction = { direction, 'string' },
@@ -236,6 +304,9 @@ function Window:resize(direction, amount)
   f(self, amount)
 end
 
+-- Resizes the window relative to its neighbors
+-- @param direction string The direction to resize ("up", "down", "left", "right")
+-- @param amount number The amount to resize by
 function Window:relative_resize(direction, amount)
   -- relative resizing takes neighbors into consideration
   vim.validate {
@@ -267,23 +338,32 @@ function Window:relative_resize(direction, amount)
   self["resize_" .. side](self, amount)
 end
 
+-- Focuses this window
 function Window:focus()
   vim.api.nvim_set_current_win(self.id)
 end
 
+-- Checks if this window is currently focused
+-- @return boolean True if this window is focused
 function Window:is_focused()
   return self.id == vim.api.nvim_get_current_win()
 end
 
+-- Gets the buffer displayed in this window
+-- @return number The buffer number
 function Window:get_buffer()
   return vim.api.nvim_win_get_buf(self.id)
 end
 
+-- Sets the buffer displayed in this window
+-- @param bufnr number The buffer number to display
 function Window:set_buffer(bufnr)
   vim.validate('bufnr', bufnr, 'number')
   vim.api.nvim_win_set_buf(self.id, bufnr)
 end
 
+-- Deletes the buffer displayed in this window and invalidates the window
+-- @return boolean True if the buffer was deleted successfully
 function Window:delete_buffer()
   local buf = self:get_buffer()
   if buf and vim.api.nvim_buf_is_valid(buf) then
@@ -295,6 +375,8 @@ function Window:delete_buffer()
   return false
 end
 
+-- Moves this window in the specified direction
+-- @param direction string The direction to move the window
 function Window:move(direction)
   vim.validate { direction = { direction, 'string' } }
   local letter = direction_to_letter[direction]
@@ -306,6 +388,9 @@ function Window:move(direction)
   vim.cmd(cmd)
 end
 
+-- Swaps the buffer in this window with a neighboring window
+-- @param direction string The direction of the window to swap with
+-- @return boolean True if the swap was successful, false if no neighbor exists
 function Window:swap(direction)
   vim.validate { direction = { direction, 'string' } }
   local letter = direction_to_letter[direction]
@@ -324,6 +409,8 @@ function Window:swap(direction)
   return true
 end
 
+-- Checks if this window is still open and valid
+-- @return boolean True if the window is open
 function Window:is_open()
   return self.id ~= nil and vim.api.nvim_win_is_valid(self.id)
 end
@@ -339,6 +426,9 @@ end
 
 M.Window = Window
 
+-- Lists all windows in the current tab
+-- @param tabnr number|nil The tab number (defaults to current tab)
+-- @return Window[] Array of Window objects
 M.list_tab = function(tabnr)
   local wins = vim.api.nvim_tabpage_list_wins(tabnr or 0)
   local result = {}
@@ -351,10 +441,19 @@ M.list_tab = function(tabnr)
   return result
 end
 
--- Returns a new window
+-- Creates a new Window instance
+-- @param id number|nil The window id (defaults to current window)
+-- @return Window A new Window instance
 M.new = Window.new
 
+-- @class WindowOpenOpts
+-- @field bufnr number|nil The buffer to display in the window
+-- @field enter boolean|nil Whether to enter the window after creation
+-- @field config table|nil Window configuration options
+
 -- Opens a new window with the given options and returns a Window object
+-- @param opts WindowOpenOpts|nil Options for creating the window
+-- @return Window The created Window object
 M.open = function(opts)
   opts = opts or {}
   local id = vim.api.nvim_open_win(opts.bufnr or 0, opts.enter or false, opts.config or {})
