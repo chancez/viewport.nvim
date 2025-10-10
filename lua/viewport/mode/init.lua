@@ -14,6 +14,7 @@ function Mode.new(config)
     mappings = {
       ['<Esc>'] = 'stop',
     },
+    mapping_opts = {},
     pre_start = function() end,
     post_start = function() end,
     pre_stop = function() end,
@@ -29,7 +30,7 @@ function Mode:start(opts)
   self.active = true
   self.config.pre_start()
 
-  local mapping_opts = { silent = true }
+  local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts)
   local it = vim.iter(self.config.mappings)
   self.current_mappings = it:map(function(lhs, action)
     return {
