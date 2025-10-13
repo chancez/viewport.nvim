@@ -35,18 +35,43 @@ KeymapManager.__index = KeymapManager
 -- @return KeymapManager A keymap manager instance
 function M.new()
   local self = setmetatable({
+    keymaps         = {},
     global_mappings = {},
     buffer_mappings = {},
-    keymaps         = {},
+    modes           = {},
     autocmd_group   = nil,
   }, KeymapManager)
 
   return self
 end
 
--- Saves the current global and buffer-local mappings for a specific mode
--- @param mode string The vim mode for the keymap ('n', 'v', 'i', etc.)
-function KeymapManager:save(mode)
+-- Saves the current global and buffer-local mappings for a specific mode or modes.
+-- @param mode string|string[] The vim mode(s) for the keymap ('n', 'v', 'i', etc.)
+function KeymapManager:save(modes)
+  vim.validate("modes", modes, { 'string', 'table' })
+  if type(modes) == 'string' then
+    modes = { modes }
+  end
+
+  -- Store the list of modes to simplify iteration later
+  self.modes = modes
+
+  -- Create autocmd group
+  self.autocmd_group = vim.api.nvim_create_augroup(
+    string.format('ViewportModeKeymaps_%s', self),
+    { clear = true }
+  )
+
+  for _, m in ipairs(modes) do
+    self:_save_mode(m)
+  end
+end
+
+-- Saves the current global and buffer-local mappings for a specific mode.
+-- @param mode string|string[] The vim mode(s) for the keymap ('n', 'v', 'i', etc.)
+function KeymapManager:_save_mode(mode)
+  vim.validate("mode", mode, 'string')
+
   -- Store the global mappings
   self.global_mappings[mode] = get_global_mappings(mode)
 
@@ -58,13 +83,70 @@ function KeymapManager:save(mode)
     end
   end
   self.buffer_mappings[mode] = buffer_mappings
+end
 
-  -- Create autocmd group if it doesn't exist
-  if not self.autocmd_group then
-    self.autocmd_group = vim.api.nvim_create_augroup(
-      string.format('ViewportModeKeymaps_%s_%s', mode, tostring(self)),
-      { clear = true }
-    )
+-- Restores all saved global and buffer-local mappings
+-- All keymaps set by this manager will be deleted.
+function KeymapManager:restore()
+  -- Clear the autocmd group which also deletes all autocmds in it
+  if self.autocmd_group then
+    vim.api.nvim_del_augroup_by_id(self.autocmd_group)
+    self.autocmd_group = nil
+  end
+
+  for _, mode in ipairs(self.modes) do
+    self:__delete_mode(mode)
+    self:__restore_mode(mode)
+  end
+
+  -- Clear all saved state
+  self.keymaps = {}
+  self.global_mappings = {}
+  self.buffer_mappings = {}
+  self.modes = {}
+end
+
+-- Deletes all keymaps set by this manager for a specific mode
+-- @param mode string The vim mode for the keymap ('n', 'v', 'i', etc.)
+function KeymapManager:__delete_mode(mode)
+  if not self.keymaps[mode] then
+    return
+  end
+  for _, keymap in pairs(self.keymaps[mode]) do
+    -- Delete buffer-local mappings from all current buffers
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(buf) then
+        -- pcall because a mapping may not be set.
+        -- Mappings are set on buffers that were loaded when we call save(),
+        -- and later on BufEnter. So if a new buffer is created, but we never
+        -- entered it, the mappings won't be set.
+        pcall(vim.api.nvim_buf_del_keymap, buf, mode, keymap.lhs)
+      end
+    end
+  end
+end
+
+-- Restores the saved global and buffer-local mappings for a specific mode
+-- @param mode string The vim mode for the keymap ('n', 'v', 'i', etc.)
+function KeymapManager:__restore_mode(mode)
+  -- Restore global mappings
+  if self.global_mappings[mode] then
+    for _, mappings in ipairs(self.global_mappings[mode]) do
+      for _, mapping in ipairs(mappings) do
+        vim.fn.mapset(mapping)
+      end
+    end
+  end
+
+  -- Restore buffer mappings
+  if self.buffer_mappings[mode] then
+    for buf, mappings in pairs(self.buffer_mappings[mode]) do
+      if vim.api.nvim_buf_is_valid(buf) then
+        for _, mapping in ipairs(mappings) do
+          vim.fn.mapset(mapping)
+        end
+      end
+    end
   end
 end
 
@@ -85,7 +167,7 @@ function KeymapManager:set(mode, lhs, rhs, opts)
   end
 
   -- Create autocmd to set keymap on new buffers
-  local autocmd_id = vim.api.nvim_create_autocmd('BufEnter', {
+  vim.api.nvim_create_autocmd('BufEnter', {
     group = self.autocmd_group,
     callback = function(ev)
       set_buffer_keymap(mode, lhs, rhs, opts, ev.buf)
@@ -95,7 +177,6 @@ function KeymapManager:set(mode, lhs, rhs, opts)
   -- Store the keymap state for this mapping
   local keymap_state = {
     lhs = lhs,
-    autocmd_id = autocmd_id,
   }
 
   if not self.keymaps[mode] then
@@ -104,66 +185,6 @@ function KeymapManager:set(mode, lhs, rhs, opts)
 
   -- Add to manager's keymaps
   table.insert(self.keymaps[mode], keymap_state)
-end
-
--- Deletes all keymaps set by this manager for a specific mode
--- @param mode string The vim mode for the keymap ('n', 'v', 'i', etc.)
-function KeymapManager:__delete(mode)
-  if not self.keymaps[mode] then
-    return
-  end
-  for _, keymap in pairs(self.keymaps[mode]) do
-    -- Remove autocmd
-    if keymap.autocmd_id then
-      vim.api.nvim_del_autocmd(keymap.autocmd_id)
-    end
-
-    -- Delete buffer-local mappings from all current buffers
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_loaded(buf) then
-        -- pcall because a mapping may not be set.
-        -- Mappings are set on buffers that were loaded when we call save(),
-        -- and later on BufEnter. So if a new buffer is created, but we never
-        -- entered it, the mappings won't be set.
-        pcall(vim.api.nvim_buf_del_keymap, buf, mode, keymap.lhs)
-      end
-    end
-  end
-  self.keymaps[mode] = nil
-end
-
--- Restores the saved global and buffer-local mappings for a specific mode
--- @param mode string The vim mode for the keymap ('n', 'v', 'i', etc.)
-function KeymapManager:restore(mode)
-  -- Delete all keymaps set by this manager before restoring
-  self:__delete(mode)
-
-  -- Clear the autocmd group
-  if self.autocmd_group then
-    vim.api.nvim_del_augroup_by_id(self.autocmd_group)
-    self.autocmd_group = nil
-  end
-
-
-  -- Restore global mappings
-  if self.global_mappings[mode] then
-    for _, mappings in ipairs(self.global_mappings[mode]) do
-      for _, mapping in ipairs(mappings) do
-        vim.fn.mapset(mapping)
-      end
-    end
-  end
-
-  -- Restore buffer mappings
-  if self.buffer_mappings[mode] then
-    for buf, mappings in pairs(self.buffer_mappings[mode]) do
-      if vim.api.nvim_buf_is_valid(buf) then
-        for _, mapping in ipairs(mappings) do
-          vim.fn.mapset(mapping)
-        end
-      end
-    end
-  end
 end
 
 return M

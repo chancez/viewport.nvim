@@ -12,16 +12,18 @@ M.actions = actions
 -- @type NavigateConfig
 local default_config = {
   mappings = {
-    ['k'] = actions.focus_above,
-    ['j'] = actions.focus_below,
-    ['h'] = actions.focus_left,
-    ['l'] = actions.focus_right,
-    ['K'] = actions.swap_above,
-    ['J'] = actions.swap_below,
-    ['H'] = actions.swap_left,
-    ['L'] = actions.swap_right,
-    ['s'] = actions.select_mode,
-    ['<Esc>'] = 'stop',
+    n = {
+      ['k'] = actions.focus_above,
+      ['j'] = actions.focus_below,
+      ['h'] = actions.focus_left,
+      ['l'] = actions.focus_right,
+      ['K'] = actions.swap_above,
+      ['J'] = actions.swap_below,
+      ['H'] = actions.swap_left,
+      ['L'] = actions.swap_right,
+      ['s'] = actions.select_mode,
+      ['<Esc>'] = 'stop',
+    },
   },
 }
 

@@ -15,18 +15,22 @@ M.actions = actions
 -- Preset key mappings for different resize modes
 local preset_mappings = {
   absolute = {
-    ['k'] = actions.resize_up,
-    ['j'] = actions.resize_down,
-    ['h'] = actions.resize_left,
-    ['l'] = actions.resize_right,
-    ['<Esc>'] = 'stop',
+    n = {
+      ['k'] = actions.resize_up,
+      ['j'] = actions.resize_down,
+      ['h'] = actions.resize_left,
+      ['l'] = actions.resize_right,
+      ['<Esc>'] = 'stop',
+    },
   },
   relative = {
-    ['k'] = actions.relative_resize_up,
-    ['j'] = actions.relative_resize_down,
-    ['h'] = actions.relative_resize_left,
-    ['l'] = actions.relative_resize_right,
-    ['<Esc>'] = 'stop',
+    n = {
+      ['k'] = actions.relative_resize_up,
+      ['j'] = actions.relative_resize_down,
+      ['h'] = actions.relative_resize_left,
+      ['l'] = actions.relative_resize_right,
+      ['<Esc>'] = 'stop',
+    },
   },
 }
 

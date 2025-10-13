@@ -163,7 +163,9 @@ function actions.select_mode(opts)
 
   -- TODO: Find a way to disable other mappings and log a warning
   mode.new({
-    mappings = keymaps,
+    mappings = {
+      n = keymaps,
+    },
     mapping_opts = { nowait = true },
     post_stop = function()
       -- Close all popups
