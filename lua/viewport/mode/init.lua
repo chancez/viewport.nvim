@@ -4,7 +4,7 @@ local M = {}
 
 -- @class Mode
 -- @field active boolean Whether the mode is currently active
--- @field current_mappings table List of current key mappings
+-- @field keymap_manager KeymapManager The keymap manager for buffer-local keymaps
 -- @field config ModeConfig The mode configuration
 local Mode = {}
 Mode.__index = Mode
@@ -36,8 +36,14 @@ local default_mode_opts = {
 function Mode.new(config)
   local self = setmetatable({}, Mode)
   self.active = false
-  self.current_mappings = {}
+  self.keymap_manager = keymap.new()
   self.config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
+  -- validate mappings
+  vim.validate('mappings', self.config.mappings, 'table')
+  for lhs, rhs in pairs(self.config.mappings) do
+    vim.validate("lhs", lhs, 'string')
+    vim.validate("rhs", rhs, { 'function', 'string' })
+  end
   return self
 end
 
@@ -49,25 +55,23 @@ function Mode:start(opts)
   end
   self.active = true
   self.config.pre_start()
+  self.keymap_manager:save('n') -- TODO: Support other modes.
 
   local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts)
   local it = vim.iter(self.config.mappings)
-  self.current_mappings = it:map(function(lhs, action)
-    return {
-      lhs = lhs,
-      -- map returns the existing mapping so we can restore it later
-      old = keymap.set('n', lhs, function()
-        if action == 'stop' then
+  it:each(function(lhs, action)
+    -- TODO: Support other modes.
+    self.keymap_manager:set('n', lhs, function()
+      if action == 'stop' then
+        self:stop()
+      else
+        -- Allow actions to stop the mode by returning true
+        if action(opts) == true then
           self:stop()
-        else
-          -- Allow actions to stop the mode by returning true
-          if action(opts) == true then
-            self:stop()
-          end
         end
-      end, mapping_opts),
-    }
-  end):totable()
+      end
+    end, mapping_opts)
+  end)
 
   self.config.post_start()
 end
@@ -75,17 +79,9 @@ end
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
   self.config.pre_stop()
-  -- restore old mappings
-  for _, mapping in ipairs(self.current_mappings) do
-    if next(mapping.old) ~= nil then
-      vim.fn.mapset(mapping.old)
-    else
-      -- Mapping was empty so delete the new temporary mapping
-      vim.keymap.del('n', mapping.lhs)
-    end
-  end
+  -- Restore all mappings using the keymap manager
+  self.keymap_manager:restore('n')
   self.config.post_stop()
-  self.current_mappings = {}
   self.active = false
 end
 
