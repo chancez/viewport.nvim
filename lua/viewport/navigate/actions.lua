@@ -109,6 +109,11 @@ end
 local select_choices_default_opts = {
   -- Use letters a-z to select windows
   choices = vim.split('abcdefghijklmnopqrstuvwxyz', ''),
+  action = function(win)
+    win:focus()
+    -- Tell the mode to stop after this action
+    return true
+  end,
   horizontal_padding = 4,
 }
 
@@ -153,11 +158,9 @@ function actions.select_mode(opts)
     })
     -- Track popups so we can close them later
     table.insert(popups, popup)
-    -- Configure the a mapping for this choice to focus the window
+    -- Configure the mapping for this choice
     keymaps[choice] = function()
-      win:focus()
-      -- Tell the mode to stop after this action
-      return true
+      return opts.action(win)
     end
   end
 
