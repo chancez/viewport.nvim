@@ -89,7 +89,6 @@ end
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
   self.config.pre_stop()
-  local modes = vim.tbl_keys(self.config.mappings)
   self.keymap_manager:restore()
   self.config.post_stop()
   self.active = false
