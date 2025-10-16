@@ -443,7 +443,7 @@ M.Window = Window
 -- Lists all windows in the current tab
 -- @param tabnr number|nil The tab number (defaults to current tab)
 -- @return Window[] Array of Window objects
-M.list_tab = function(tabnr)
+function M.list_tab(tabnr)
   local wins = vim.api.nvim_tabpage_list_wins(tabnr or 0)
   local result = {}
   for _, id in ipairs(wins) do
@@ -463,15 +463,63 @@ M.new = Window.new
 -- @class WindowOpenOpts
 -- @field bufnr number|nil The buffer to display in the window
 -- @field enter boolean|nil Whether to enter the window after creation
--- @field config table|nil Window configuration options
+-- @field config vim.api.keyset.win_config|nil Window configuration options
 
 -- Opens a new window with the given options and returns a Window object
 -- @param opts WindowOpenOpts|nil Options for creating the window
 -- @return Window The created Window object
-M.open = function(opts)
+function M.open(opts)
   opts = opts or {}
   local id = vim.api.nvim_open_win(opts.bufnr or 0, opts.enter or false, opts.config or {})
   return Window.new(id)
+end
+
+-- @class WindowPopupOpts
+-- @field win Window|nil The window to position the popup relative to (defaults to current window)
+-- @field buf number|nil The buffer to display in the popup (created if not provided)
+-- @field buf_name string|nil The name to set for the buffer created
+-- @field buf_lines string[]|nil Lines to set in the buffer created
+-- @field enter boolean|nil Whether to enter the popup window after creation (defaults to false)
+-- @field config vim.api.keyset.win_config|nil Configuration for the popup window (position, size, border, etc.)
+
+-- Opens a popup window with the given options and returns a Window object
+-- @param opts WindowPopupOpts Options for creating the popup
+-- @return Window The created popup Window object
+function M.open_popup(opts)
+  local win = opts.win or Window.new()
+  local buf = opts.buf
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_set_option_value('buftype', 'nofile', { buf = buf })
+    vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = buf })
+    vim.api.nvim_set_option_value('swapfile', false, { buf = buf })
+  end
+  if opts.buf_name then
+    vim.api.nvim_buf_set_name(buf, opts.buf_name)
+  end
+  if opts.buf_lines then
+    -- TODO: This is maybe a bit limited. Maybe should just make it easier to
+    -- create the buffer and only provide it instead.
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.buf_lines)
+  end
+  local popup_config = vim.tbl_extend('force', {
+      relative = 'win',
+      win = win.id,
+      style = 'minimal',
+      -- position in the middle of the window by default
+      row = win:height() / 2,
+      col = win:width() / 2,
+      noautocmd = true,
+      border = 'rounded',
+    },
+    opts.config)
+
+  local popup = M.open({
+    bufnr = buf,
+    enter = opts.enter or false,
+    config = popup_config,
+  })
+  return popup
 end
 
 return M
