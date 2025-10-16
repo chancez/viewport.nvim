@@ -3,10 +3,6 @@ local mode = require('viewport.mode')
 
 local actions = {}
 
--- @class SelectModeOpts
--- @field choices table List of characters to use for selecting windows
--- @field horizontal_padding number Horizontal padding for the selection popup
-
 -- Focuses a window in the specified direction
 -- @param direction string The direction to focus ("up", "down", "left", "right")
 -- @return boolean True if a window was found and focused, false otherwise
@@ -104,6 +100,12 @@ function actions.swap_right()
   end
 end
 
+-- @class SelectModeOpts
+-- @field choices table List of characters to use for selecting windows
+-- @field horizontal_padding number Horizontal padding for the selection popup
+-- @field action function Function to call with the selected window
+-- @field exclude_windows table List of window IDs to exclude from selection
+
 -- Default options for select mode
 -- @type SelectModeOpts
 local select_choices_default_opts = {
@@ -111,57 +113,65 @@ local select_choices_default_opts = {
   choices = vim.split('abcdefghijklmnopqrstuvwxyz', ''),
   action = function(win)
     win:focus()
-    -- Tell the mode to stop after this action
-    return true
   end,
   horizontal_padding = 4,
+  exclude_windows = {},
 }
 
 -- Enters window selection mode, showing a popup over each window with a selectable character
 -- @param opts SelectModeOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
 function actions.select_mode(opts)
-  opts = vim.tbl_extend('keep', opts or {}, select_choices_default_opts)
+  opts = vim.tbl_extend('force', select_choices_default_opts, opts or {})
   local windows = window.list_tab()
   local keymaps = {}
   local popups = {}
   if #windows > #opts.choices then
     error("Too many windows to select from. Max is " .. #opts.choices)
   end
+
+  local close_popups = function()
+    for _, popup in ipairs(popups) do
+      -- Delete the temporary buffer, which also closes the window
+      popup:delete_buffer()
+    end
+  end
+
+  local selected_win = nil
   for i, win in ipairs(windows) do
+    -- Check if this window should be excluded
+    if vim.tbl_contains(opts.exclude_windows, win.id) then
+      goto continue
+    end
+
     -- Create a popup above each window with one of the choices
-    local buf = vim.api.nvim_create_buf(false, true)
     local choice = opts.choices[i]
     local text = "[" .. choice .. "]"
     local width = #text + opts.horizontal_padding
     -- Insert the text in the middle of the buffer
     text = string.rep(" ", math.floor((width - #text) / 2)) .. text
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { text })
-    local popup = window.open({
-      bufnr = buf,
+    local popup = window.open_popup({
+      win = win,
+      buf_lines = { text },
       config = {
-        relative = 'win',
-        win = win.id,
-        style = 'minimal',
-        -- position in the middle of the window
-        row = win:height() / 2,
-        col = win:width() / 2,
         width = width,
         height = 1,
         title = "select",
         footer = "window",
         title_pos = "center",
         footer_pos = "center",
-        noautocmd = true,
-        border = 'rounded',
-      }
+      },
     })
+
     -- Track popups so we can close them later
     table.insert(popups, popup)
     -- Configure the mapping for this choice
     keymaps[choice] = function()
-      return opts.action(win)
+      selected_win = win
+      return true
     end
+
+    ::continue::
   end
 
   -- TODO: Find a way to disable other mappings and log a warning
@@ -169,14 +179,13 @@ function actions.select_mode(opts)
     mappings = {
       n = keymaps,
     },
-    mapping_opts = { nowait = true },
     post_stop = function()
-      -- Close all popups
-      for _, popup in ipairs(popups) do
-        -- Delete the temporary buffer, which also closes the window
-        popup:delete_buffer()
+      close_popups()
+      if selected_win then
+        opts.action(selected_win)
       end
-    end
+    end,
+    mapping_opts = { nowait = true },
   }):start()
 end
 
