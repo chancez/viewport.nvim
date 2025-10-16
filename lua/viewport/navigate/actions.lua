@@ -226,4 +226,87 @@ function actions.select_swap(win, opts)
     }, opts or {}))
 end
 
+-- @class Choice
+-- @field key string Key to press to select this choice
+-- @field text string Text to display for the choice
+-- @field action function Function to call when the choice is selected
+
+
+-- Opens a popup in the specified window with a list of choices. The user can
+-- press the key corresponding to a choice to execute its action.
+-- @param win number|Window The window to open the popup in
+-- @param choices Choice[] List of choices to present to the user
+-- @error Throws an error if the parameters are invalid
+function actions.new_window_choice_picker(win, choices)
+  vim.validate("win", win, { 'number', 'table' })
+  vim.validate("choices", choices, 'table')
+  for _, choice in ipairs(choices) do
+    vim.validate("choice.key", choice.key, 'string')
+    vim.validate("choice.text", choice.text, 'string')
+    vim.validate("choice.action", choice.action, 'function')
+  end
+
+  local lines = { "Choose action:" }
+  for _, choice in pairs(choices) do
+    table.insert(lines, choice.text)
+  end
+
+  local popup = window.open_popup({
+    win = win,
+    buf_lines = lines,
+    config = {
+      width = 20,
+      height = #lines,
+      title = "actions",
+      title_pos = "center",
+    },
+  })
+
+  -- no-op if they don't pick anything
+  local action_callback = function(_) end
+
+  local mappings = {}
+  for _, choice in ipairs(choices) do
+    -- Create a mapping which just sets action_callback
+    -- and exits the mode
+    mappings[choice.key] = function()
+      action_callback = choice.action
+      -- Exit the mode after the choice is made
+      return true
+    end
+  end
+
+  mode.new({
+    mappings = {
+      n = mappings,
+    },
+    -- Close popups in case the user exits without making a choice
+    post_stop = function()
+      popup:delete_buffer()
+      -- Execute the chosen action if any
+      -- This must happen in the post_stop so that if the chosen
+      -- action starts a sub-mode, the mappings this mode created
+      -- have already been removed and existing mappings are restored
+      -- before the new sub-mode starts.
+      action_callback(win)
+    end,
+    mapping_opts = { nowait = true },
+  }):start()
+end
+
+-- Starts a mode to select a window from the current tabpage and presents
+-- a list of choices to perform on that window.
+-- @param choices Choice[] List of choices to present to the user
+-- @param opts WindowSelectorOpts|nil Options for selection mode
+-- @error Throws an error if there are more windows than available choices
+function actions.select_window_choices(choices, opts)
+  opts = opts or {}
+  actions.new_window_selector(
+    function(win)
+      actions.new_window_choice_picker(win, choices)
+    end,
+    opts
+  )
+end
+
 return actions
