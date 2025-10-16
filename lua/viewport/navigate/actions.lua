@@ -31,9 +31,9 @@ end
 -- Swaps the current window with a window in the specified direction
 -- @param direction string The direction to swap with
 -- @return boolean True if the swap was successful, false otherwise
-local function swap_window(direction)
+local function swap_window_direction(direction)
   local current_window = window.new()
-  return current_window:swap(direction)
+  return current_window:swap_direction(direction)
 end
 
 -- Focuses the window above the current one
@@ -78,28 +78,28 @@ end
 
 -- Swaps the current window with the one above and focuses it
 function actions.swap_above()
-  if swap_window("up") then
+  if swap_window_direction("up") then
     focus_window("up")
   end
 end
 
 -- Swaps the current window with the one below and focuses it
 function actions.swap_below()
-  if swap_window("down") then
+  if swap_window_direction("down") then
     focus_window("down")
   end
 end
 
 -- Swaps the current window with the one to the left and focuses it
 function actions.swap_left()
-  if swap_window("left") then
+  if swap_window_direction("left") then
     focus_window("left")
   end
 end
 
 -- Swaps the current window with the one to the right and focuses it
 function actions.swap_right()
-  if swap_window("right") then
+  if swap_window_direction("right") then
     focus_window("right")
   end
 end

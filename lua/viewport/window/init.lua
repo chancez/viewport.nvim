@@ -388,10 +388,10 @@ function Window:move(direction)
   vim.cmd(cmd)
 end
 
--- Swaps the buffer in this window with a neighboring window
+-- Swaps the buffer in this window with a neighboring window in the specified direction
 -- @param direction string The direction of the window to swap with
 -- @return boolean True if the swap was successful, false if no neighbor exists
-function Window:swap(direction)
+function Window:swap_direction(direction)
   vim.validate { direction = { direction, 'string' } }
   local letter = direction_to_letter[direction]
   if not letter then
@@ -402,10 +402,21 @@ function Window:swap(direction)
   if not neighbor then
     return false
   end
+  return self:swap(neighbor)
+end
+
+-- Swaps the buffer in this window with another window
+-- @param other Window|number The other window or its id.
+-- @return boolean True if the swap was successful
+function Window:swap(other)
+  -- If other is a window ID, convert it to a Window object
+  if type(other) == "number" then
+    other = Window.new(other)
+  end
   local current_buf = self:get_buffer()
-  local neighbor_buf = neighbor:get_buffer()
-  self:set_buffer(neighbor_buf)
-  neighbor:set_buffer(current_buf)
+  local other_buf = other:get_buffer()
+  self:set_buffer(other_buf)
+  other:set_buffer(current_buf)
   return true
 end
 
