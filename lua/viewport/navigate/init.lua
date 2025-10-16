@@ -21,7 +21,7 @@ local default_config = {
       ['J'] = actions.swap_below,
       ['H'] = actions.swap_left,
       ['L'] = actions.swap_right,
-      ['s'] = actions.select_mode,
+      ['s'] = actions.select_window,
       ['<Esc>'] = 'stop',
     },
   },

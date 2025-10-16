@@ -100,29 +100,31 @@ function actions.swap_right()
   end
 end
 
--- @class SelectModeOpts
+-- @class WindowSelectorOpts
 -- @field choices table List of characters to use for selecting windows
 -- @field horizontal_padding number Horizontal padding for the selection popup
 -- @field action function Function to call with the selected window
 -- @field exclude_windows table List of window IDs to exclude from selection
 
 -- Default options for select mode
--- @type SelectModeOpts
-local select_choices_default_opts = {
+-- @type WindowSelectorOpts
+local WindowSelectorOpts = {
   -- Use letters a-z to select windows
   choices = vim.split('abcdefghijklmnopqrstuvwxyz', ''),
-  action = function(win)
-    win:focus()
-  end,
   horizontal_padding = 4,
   exclude_windows = {},
 }
 
--- Enters window selection mode, showing a popup over each window with a selectable character
--- @param opts SelectModeOpts|nil Options for selection mode
+-- Starts a mode to select a window from the current tabpage. A popup is opened
+-- above each window with a character to press to select that window. Once the
+-- character is pressed, the corresponding window is passed to the action
+-- function provided.
+-- @param action function The function to call with the selected window
+-- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function actions.select_mode(opts)
-  opts = vim.tbl_extend('force', select_choices_default_opts, opts or {})
+function actions.new_window_selector(action, opts)
+  vim.validate("action", action, 'function')
+  opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
   local windows = window.list_tab()
   local keymaps = {}
   local popups = {}
@@ -182,11 +184,46 @@ function actions.select_mode(opts)
     post_stop = function()
       close_popups()
       if selected_win then
-        opts.action(selected_win)
+        action(selected_win)
       end
     end,
     mapping_opts = { nowait = true },
   }):start()
+end
+
+-- Starts a mode to select a window from the current tabpage and focuses it
+-- when selected.
+-- @param opts WindowSelectorOpts|nil Options for selection mode
+-- @error Throws an error if there are more windows than available choices
+function actions.select_window(opts)
+  actions.new_window_selector(
+    function(win)
+      win:focus()
+    end,
+    opts or {}
+  )
+  return true
+end
+
+-- Starts a mode to select a window from the current tabpage and swaps it
+-- with the specified window when selected.
+-- @param win number|Window The window to swap with. If nil, uses the current window.
+-- @param opts WindowSelectorOpts|nil Options for selection mode
+-- @error Throws an error if there are more windows than available choices
+function actions.select_swap(win, opts)
+  win = win or window.new()
+  if type(win) == 'number' then
+    win = window.new(win)
+  end
+  -- Open a selection to choose the window to swap with
+  actions.new_window_selector(
+    function(other_win)
+      win:swap(other_win)
+    end,
+    vim.tbl_extend('keep', {
+      -- When swapping, don't allow selecting the window already selected
+      exclude_windows = { win.id },
+    }, opts or {}))
 end
 
 return actions
