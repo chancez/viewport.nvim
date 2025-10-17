@@ -28,6 +28,7 @@ local default_mode_opts = {
       ['<Esc>'] = 'stop',
     }
   },
+  action_opts = {},
   mapping_opts = {},
   pre_start = function() end,
   post_start = function() end,
@@ -56,8 +57,7 @@ function Mode.new(config)
 end
 
 -- Starts the mode, activating key mappings and calling lifecycle hooks
--- @param opts table|nil Options to pass to action functions
-function Mode:start(opts)
+function Mode:start()
   if self.active then
     return
   end
@@ -75,7 +75,7 @@ function Mode:start(opts)
           self:stop()
         else
           -- Allow actions to stop the mode by returning true
-          if rhs(opts) == true then
+          if rhs(self.action_opts) == true then
             self:stop()
           end
         end

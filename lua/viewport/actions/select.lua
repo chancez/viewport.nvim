@@ -1,104 +1,7 @@
 local window = require('viewport.window')
 local mode = require('viewport.mode')
 
-local actions = {}
-
--- Focuses a window in the specified direction
--- @param direction string The direction to focus ("up", "down", "left", "right")
--- @return boolean True if a window was found and focused, false otherwise
-local function focus_window(direction)
-  local current_window = window.new()
-  local neighbor = current_window:neighbor(direction)
-  if neighbor then
-    neighbor:focus()
-    return true
-  end
-  return false
-end
-
--- Moves the current window in the specified direction
--- @param direction string The direction to move the window
-local function move_window(direction)
-  local current_window = window.new()
-  -- TODO: Do we need to check if the move is valid?
-  current_window:move(direction)
-end
-
--- Swaps the current window with a window in the specified direction
--- @param direction string The direction to swap with
--- @return boolean True if the swap was successful, false otherwise
-local function swap_window_direction(direction)
-  local current_window = window.new()
-  return current_window:swap_direction(direction)
-end
-
--- Focuses the window above the current one
-function actions.focus_above()
-  focus_window("up")
-end
-
--- Focuses the window below the current one
-function actions.focus_below()
-  focus_window("down")
-end
-
--- Focuses the window to the left of the current one
-function actions.focus_left()
-  focus_window("left")
-end
-
--- Focuses the window to the right of the current one
-function actions.focus_right()
-  focus_window("right")
-end
-
--- Moves the current window up
-function actions.move_up()
-  move_window("up")
-end
-
--- Moves the current window down
-function actions.move_down()
-  move_window("down")
-end
-
--- Moves the current window left
-function actions.move_left()
-  move_window("left")
-end
-
--- Moves the current window right
-function actions.move_right()
-  move_window("right")
-end
-
--- Swaps the current window with the one above and focuses it
-function actions.swap_above()
-  if swap_window_direction("up") then
-    focus_window("up")
-  end
-end
-
--- Swaps the current window with the one below and focuses it
-function actions.swap_below()
-  if swap_window_direction("down") then
-    focus_window("down")
-  end
-end
-
--- Swaps the current window with the one to the left and focuses it
-function actions.swap_left()
-  if swap_window_direction("left") then
-    focus_window("left")
-  end
-end
-
--- Swaps the current window with the one to the right and focuses it
-function actions.swap_right()
-  if swap_window_direction("right") then
-    focus_window("right")
-  end
-end
+local select_actions = {}
 
 -- @class WindowSelectorOpts
 -- @field choices table List of characters to use for selecting windows
@@ -122,7 +25,7 @@ local WindowSelectorOpts = {
 -- @param action function The function to call with the selected window
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function actions.new_window_selector(action, opts)
+function select_actions.new_window_selector(action, opts)
   vim.validate("action", action, 'function')
   opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
   local windows = window.list_tab()
@@ -195,8 +98,8 @@ end
 -- when selected.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function actions.select_window(opts)
-  actions.new_window_selector(
+function select_actions.select_window(opts)
+  select_actions.new_window_selector(
     function(win)
       win:focus()
     end,
@@ -210,13 +113,13 @@ end
 -- @param win number|Window The window to swap with. If nil, uses the current window.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function actions.select_swap(win, opts)
+function select_actions.select_swap(win, opts)
   win = win or window.new()
   if type(win) == 'number' then
     win = window.new(win)
   end
   -- Open a selection to choose the window to swap with
-  actions.new_window_selector(
+  select_actions.new_window_selector(
     function(other_win)
       win:swap(other_win)
     end,
@@ -237,7 +140,7 @@ end
 -- @param win number|Window The window to open the popup in
 -- @param choices Choice[] List of choices to present to the user
 -- @error Throws an error if the parameters are invalid
-function actions.new_window_choice_picker(win, choices)
+function select_actions.new_window_choice_picker(win, choices)
   vim.validate("win", win, { 'number', 'table' })
   vim.validate("choices", choices, 'table')
   for _, choice in ipairs(choices) do
@@ -299,14 +202,14 @@ end
 -- @param choices Choice[] List of choices to present to the user
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function actions.select_window_choices(choices, opts)
+function select_actions.select_window_choices(choices, opts)
   opts = opts or {}
-  actions.new_window_selector(
+  select_actions.new_window_selector(
     function(win)
-      actions.new_window_choice_picker(win, choices)
+      select_actions.new_window_choice_picker(win, choices)
     end,
     opts
   )
 end
 
-return actions
+return select_actions
