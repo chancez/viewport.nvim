@@ -345,6 +345,7 @@ end
 
 -- Focuses a neighboring window in the specified direction
 -- @param direction string The direction to focus ("up", "down", "left", "right")
+-- @return Window The newly focused window or the current window if no window exists in that direction
 function Window:focus_direction(direction)
   vim.validate { direction = { direction, 'string' } }
   local letter = direction_to_letter[direction]
@@ -354,6 +355,8 @@ function Window:focus_direction(direction)
   end
   local cmd = string.format("wincmd %s", letter)
   vim.cmd(cmd)
+  -- Return the newly focused window
+  return Window.new()
 end
 
 -- Checks if this window is currently focused
@@ -449,6 +452,55 @@ function Window:close()
   end
   vim.api.nvim_win_close(self.id, true)
   self.id = nil
+end
+
+-- Splits the window and returns the new Window object
+-- @param focus boolean|nil Whether to focus the new window after splitting (defaults to false)
+-- @return Window The newly created Window object
+function Window:split(split_type, focus)
+  vim.validate("split_type", split_type,
+    function(val)
+      return val == "split" or val == "vsplit"
+    end,
+    "split_type must be 'split' or 'vsplit'"
+  )
+  vim.validate("focus", focus, { 'nil', 'boolean' })
+  -- Save the current window to restore focus later if needed
+  local old_win = Window.new()
+
+  -- Focus this window before splitting since splits occur relative to the current window
+  self:focus()
+  -- Split
+  vim.cmd(split_type)
+
+  -- Determine the direction of the split
+  -- horizontal splits create a window below
+  local direction = "down"
+  if split_type == "vsplit" then
+    -- vertical splits create a window to the right
+    direction = "right"
+  end
+
+  local new_win = self:focus_direction(direction)
+  -- Restore focus based on the parameter
+  if not focus then
+    old_win:focus()
+  end
+  return new_win
+end
+
+-- Splits the window horizontally and returns the new Window object
+-- @param focus boolean|nil Whether to focus the new window after splitting (defaults to false)
+-- @return Window The newly created Window object
+function Window:split_horizontal(focus)
+  return self:split("split", focus)
+end
+
+-- Splits the window vertically and returns the new Window object
+-- @param focus boolean|nil Whether to focus the new window after splitting (defaults to false)
+-- @return Window The newly created Window object
+function Window:split_vertical(focus)
+  return self:split("vsplit", focus)
 end
 
 M.Window = Window
