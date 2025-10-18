@@ -75,7 +75,7 @@ function Mode:start()
           self:stop()
         else
           -- Allow actions to stop the mode by returning true
-          if rhs(self.action_opts) == true then
+          if rhs(self.config.action_opts) == true then
             self:stop()
           end
         end
