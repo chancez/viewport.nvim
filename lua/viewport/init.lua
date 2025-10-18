@@ -68,4 +68,6 @@ function M.start_swap_mode()
   modes.start('swap')
 end
 
+M.modes = modes
+
 return M

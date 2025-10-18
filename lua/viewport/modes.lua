@@ -4,6 +4,23 @@ local registry = {}
 
 local M = {}
 
+local mode_change_autocmd = "ViewportModeChange"
+
+-- Sets the active mode and emits an autocmd
+-- @param name string|nil Mode name or nil if no active mode
+local function set_active_mode(name)
+  -- Set the global variable for external plugins to query
+  vim.g.viewport_active_mode = name
+  -- Emit an autocmd for mode change
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = mode_change_autocmd,
+    data = { mode = name },
+  })
+end
+
+-- Autocmd event name emitted on mode change
+M.mode_change_autocmd = mode_change_autocmd
+
 -- Registers a mode instance
 -- @param name string Mode name
 -- @param mode_instance Mode The mode instance to register
@@ -31,11 +48,11 @@ function M.start(name)
   local old_post_start = mode_instance.config.post_start
   local old_post_stop = mode_instance.config.post_stop
   mode_instance.config.post_start = function(self)
-    vim.g.viewport_active_mode = name
+    set_active_mode(name)
     old_post_start(self)
   end
   mode_instance.config.post_stop = function(self)
-    vim.g.viewport_active_mode = nil
+    set_active_mode(nil)
     old_post_stop(self)
   end
 
