@@ -30,10 +30,10 @@ local default_mode_opts = {
   },
   action_opts = {},
   mapping_opts = {},
-  pre_start = function() end,
-  post_start = function() end,
-  pre_stop = function() end,
-  post_stop = function() end,
+  pre_start = function(_) end,
+  post_start = function(_) end,
+  pre_stop = function(_) end,
+  post_stop = function(_) end,
 }
 
 -- Creates a new Mode instance
@@ -62,7 +62,7 @@ function Mode:start()
     return
   end
   self.active = true
-  self.config.pre_start()
+  self.config.pre_start(self)
 
   local modes = vim.tbl_keys(self.config.mappings)
   self.keymap_manager:save(modes)
@@ -83,14 +83,14 @@ function Mode:start()
     end
   end
 
-  self.config.post_start()
+  self.config.post_start(self)
 end
 
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
-  self.config.pre_stop()
+  self.config.pre_stop(self)
   self.keymap_manager:restore()
-  self.config.post_stop()
+  self.config.post_stop(self)
   self.active = false
 end
 

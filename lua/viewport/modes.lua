@@ -1,9 +1,6 @@
 -- Central registry for mode instances
 -- This module breaks the circular dependency between modes and presets
-local registry = {
-  resize = nil,
-  navigate = nil,
-}
+local registry = {}
 
 local M = {}
 

@@ -2,6 +2,7 @@ local default_config = require('viewport.config')
 local modes = require('viewport.modes')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
+local select_actions = require('viewport.actions.select')
 
 local M = {}
 
@@ -37,6 +38,13 @@ function M.setup(opts)
     resize_amount = opts.resize_mode.resize_amount,
   })
   new_mode('navigate', opts.navigate_mode.mappings)
+
+  local select_mode = select_actions.new_window_selector_mode(
+    function(win)
+      select_actions.new_window_choice_picker(win, opts.select_mode.choices)
+    end
+  )
+  modes.register('select', select_mode)
 end
 
 function M.start_resize_mode()
@@ -45,6 +53,10 @@ end
 
 function M.start_navigate_mode()
   modes.start('navigate')
+end
+
+function M.start_select_mode()
+  modes.start('select')
 end
 
 return M

@@ -15,4 +15,52 @@ default_config.navigate_mode = {
   }
 }
 
+default_config.select_mode = {
+  choices = {
+    {
+      key = 'r',
+      text = "[r]esize",
+      action = function(win)
+        win:focus()
+        require('viewport.modes').start('resize')
+      end
+    },
+    {
+      key = 'f',
+      text = "[f]ocus",
+      action = function(win)
+        win:focus()
+      end
+    },
+    {
+      key = 's',
+      text = "[s]wap",
+      action = function(win)
+        require('viewport.actions.select').select_swap(win)
+      end
+    },
+    {
+      key = 'c',
+      text = "[c]close",
+      action = function(win)
+        win:close()
+      end
+    },
+    {
+      key = 'h',
+      text = "[h]orzontal split",
+      action = function(win)
+        win:split_horizontal(true)
+      end
+    },
+    {
+      key = 'v',
+      text = "[v]ertical split",
+      action = function(win)
+        win:split_vertical(true)
+      end
+    },
+  }
+}
+
 return default_config
