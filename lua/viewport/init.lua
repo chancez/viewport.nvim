@@ -49,7 +49,7 @@ function M.setup(opts)
     end
   ))
 
-  modes.register('swap', select_actions.new_select_swap_mode())
+  modes.register('swap', select_actions.new_swap_mode())
 end
 
 function M.start_resize_mode()

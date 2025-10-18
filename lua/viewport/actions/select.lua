@@ -139,7 +139,7 @@ end
 -- @param win number|Window The window to swap with. If nil, uses the current window.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function select_actions.new_select_swap_mode(win, opts)
+function select_actions.new_swap_mode(win, opts)
   win = win or window.new()
   if type(win) == 'number' then
     win = window.new(win)
@@ -153,15 +153,6 @@ function select_actions.new_select_swap_mode(win, opts)
       -- When swapping, don't allow selecting the window already selected
       exclude_windows = { win.id },
     }, opts or {}))
-end
-
--- Starts a mode to select a window from the current tabpage and swaps it
--- with the specified window when selected.
--- @param win number|Window The window to swap with. If nil, uses the current window.
--- @param opts WindowSelectorOpts|nil Options for selection mode
--- @error Throws an error if there are more windows than available choices
-function select_actions.select_swap(win, opts)
-  select_actions.new_select_swap_mode(win, opts):start()
 end
 
 -- @class Choice

@@ -36,7 +36,8 @@ default_config.select_mode = {
       key = 's',
       text = "[s]wap",
       action = function(win)
-        require('viewport.actions.select').select_swap(win)
+        win:focus()
+        require('viewport.modes').start('swap')
       end
     },
     {
