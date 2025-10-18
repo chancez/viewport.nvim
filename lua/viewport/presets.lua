@@ -45,6 +45,10 @@ local preset_mappings = {
   },
 }
 
+-- Retrieves a preset mapping for the given mode and name
+-- @param mode string Mode name ('resize' or 'navigate')
+-- @param name string Preset name
+-- @return table Preset mapping table
 function presets.get(mode, name)
   local preset = preset_mappings[mode][name]
   if not preset then
