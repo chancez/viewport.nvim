@@ -343,6 +343,19 @@ function Window:focus()
   vim.api.nvim_set_current_win(self.id)
 end
 
+-- Focuses a neighboring window in the specified direction
+-- @param direction string The direction to focus ("up", "down", "left", "right")
+function Window:focus_direction(direction)
+  vim.validate { direction = { direction, 'string' } }
+  local letter = direction_to_letter[direction]
+  if not letter then
+    error(string.format("Invalid direction '%s'. Valid directions are: %s", direction,
+      table.concat(vim.tbl_keys(direction_to_letter), ", ")))
+  end
+  local cmd = string.format("wincmd %s", letter)
+  vim.cmd(cmd)
+end
+
 -- Checks if this window is currently focused
 -- @return boolean True if this window is focused
 function Window:is_focused()
