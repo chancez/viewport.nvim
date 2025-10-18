@@ -10,19 +10,16 @@ local M = {}
 -- @param name string Name of the mode ('resize' or 'navigate')
 -- @param opts table Configuration options for the mode
 -- @return Mode New mode instance
-local function new_mode(name, mappings, action_opts)
-  mappings = vim.deepcopy(mappings)
+local function new_mode(name, mode_opts)
+  mode_opts = vim.deepcopy(mode_opts)
+  local mappings = vim.deepcopy(mode_opts.mappings or {})
   if mappings.preset then
     local preset = presets.get(name, mappings.preset)
     -- Delete the preset key so it isnt treated as a mapping itself
     mappings.preset = nil
     mappings = vim.tbl_extend('force', preset, mappings)
   end
-
-  local mode_opts = {
-    mappings = mappings,
-    action_opts = action_opts or {},
-  }
+  mode_opts.mappings = mappings
 
   local new_m = mode.new(mode_opts)
   modes.register(name, new_m)
@@ -34,10 +31,17 @@ end
 function M.setup(opts)
   opts = vim.tbl_deep_extend('force', default_config, opts or {})
   -- Create and register modes
-  new_mode('resize', opts.resize_mode.mappings, {
-    resize_amount = opts.resize_mode.resize_amount,
+  new_mode('resize', {
+    mappings = opts.resize_mode.mappings,
+    action_opts = {
+      resize_amount = opts.resize_mode.resize_amount,
+    },
+    stop_after_action = false,
   })
-  new_mode('navigate', opts.navigate_mode.mappings)
+  new_mode('navigate', {
+    mappings = opts.navigate_mode.mappings,
+    stop_after_action = false,
+  })
 
   local select_mode = select_actions.new_window_selector_mode(
     function(win)

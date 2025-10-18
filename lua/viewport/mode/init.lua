@@ -30,6 +30,7 @@ local default_mode_opts = {
   },
   action_opts = {},
   mapping_opts = {},
+  stop_after_action = true,
   pre_start = function(_) end,
   post_start = function(_) end,
   pre_stop = function(_) end,
@@ -74,8 +75,8 @@ function Mode:start()
         if rhs == 'stop' then
           self:stop()
         else
-          -- Allow actions to stop the mode by returning true
-          if rhs(self.config.action_opts) == true then
+          rhs(self.config.action_opts)
+          if self.config.stop_after_action then
             self:stop()
           end
         end

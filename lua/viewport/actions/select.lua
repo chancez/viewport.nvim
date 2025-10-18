@@ -80,7 +80,6 @@ function select_actions.new_window_selector_mode(action, opts)
       -- Configure the mapping for this choice
       keymaps[choice] = function()
         selected_win = win
-        return true
       end
 
       ::continue::
@@ -131,7 +130,6 @@ function select_actions.select_window(opts)
     end,
     opts or {}
   ):start()
-  return true
 end
 
 -- Starts a mode to select a window from the current tabpage and swaps it
@@ -200,8 +198,6 @@ function select_actions.new_window_choice_picker(win, choices)
     -- and exits the mode
     mappings[choice.key] = function()
       action_callback = choice.action
-      -- Exit the mode after the choice is made
-      return true
     end
   end
 
