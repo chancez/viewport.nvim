@@ -43,12 +43,13 @@ function M.setup(opts)
     stop_after_action = false,
   })
 
-  local select_mode = select_actions.new_window_selector_mode(
+  modes.register('select', select_actions.new_window_selector_mode(
     function(win)
       select_actions.new_window_choice_picker(win, opts.select_mode.choices)
     end
-  )
-  modes.register('select', select_mode)
+  ))
+
+  modes.register('swap', select_actions.new_select_swap_mode())
 end
 
 function M.start_resize_mode()
@@ -61,6 +62,10 @@ end
 
 function M.start_select_mode()
   modes.start('select')
+end
+
+function M.start_swap_mode()
+  modes.start('swap')
 end
 
 return M

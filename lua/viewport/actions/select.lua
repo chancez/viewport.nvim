@@ -132,25 +132,36 @@ function select_actions.select_window(opts)
   ):start()
 end
 
--- Starts a mode to select a window from the current tabpage and swaps it
--- with the specified window when selected.
+-- Creates a mode to select a window from the current tabpage. When the mode is
+-- started, a popup is opened above each window with a character to press to
+-- select that window. Once the character is pressed, the specified window
+-- is swapped with the selected window.
 -- @param win number|Window The window to swap with. If nil, uses the current window.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function select_actions.select_swap(win, opts)
+function select_actions.new_select_swap_mode(win, opts)
   win = win or window.new()
   if type(win) == 'number' then
     win = window.new(win)
   end
-  -- Open a selection to choose the window to swap with
-  select_actions.new_window_selector_mode(
+  -- Create a mode that swaps the selected window with the specified window
+  return select_actions.new_window_selector_mode(
     function(other_win)
       win:swap(other_win)
     end,
     vim.tbl_extend('keep', {
       -- When swapping, don't allow selecting the window already selected
       exclude_windows = { win.id },
-    }, opts or {})):start()
+    }, opts or {}))
+end
+
+-- Starts a mode to select a window from the current tabpage and swaps it
+-- with the specified window when selected.
+-- @param win number|Window The window to swap with. If nil, uses the current window.
+-- @param opts WindowSelectorOpts|nil Options for selection mode
+-- @error Throws an error if there are more windows than available choices
+function select_actions.select_swap(win, opts)
+  select_actions.new_select_swap_mode(win, opts):start()
 end
 
 -- @class Choice
