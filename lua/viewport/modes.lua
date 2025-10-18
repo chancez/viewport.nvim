@@ -26,6 +26,19 @@ function M.start(name)
   if mode_instance == nil then
     error(string.format("%s mode not initialized. Please call setup() first.", name))
   end
+  --
+  -- Set vim.g.viewport_active_mode for external plugins to query
+  local old_post_start = mode_instance.config.post_start
+  local old_post_stop = mode_instance.config.post_stop
+  mode_instance.config.post_start = function(self)
+    vim.g.viewport_active_mode = name
+    old_post_start(self)
+  end
+  mode_instance.config.post_stop = function(self)
+    vim.g.viewport_active_mode = nil
+    old_post_stop(self)
+  end
+
   mode_instance:start()
 end
 
