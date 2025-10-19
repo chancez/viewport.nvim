@@ -17,8 +17,10 @@ local function new_mode(name, mode_opts)
     local preset = presets.get(name, mappings.preset)
     -- Delete the preset key so it isnt treated as a mapping itself
     mappings.preset = nil
-    mappings = vim.tbl_extend('force', preset, mappings)
+    -- User defined mappings override preset mappings
+    mappings = vim.tbl_deep_extend('force', preset, mappings)
   end
+
   mode_opts.mappings = mappings
 
   local new_m = mode.new(mode_opts)
