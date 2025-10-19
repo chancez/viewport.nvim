@@ -570,7 +570,7 @@ end
 function M.open_popup(opts)
   local win = opts.win or Window.new()
   local buf = opts.buf
-  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+  if not buf then
     buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value('buftype', 'nofile', { buf = buf })
     vim.api.nvim_set_option_value('bufhidden', 'wipe', { buf = buf })
