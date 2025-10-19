@@ -7,12 +7,14 @@ default_config.resize_mode = {
   mappings = {
     preset = 'absolute', -- 'absolute' or 'relative'
   },
+  display_mappings = true,
 }
 
 default_config.navigate_mode = {
   mappings = {
     preset = 'default',
-  }
+  },
+  display_mappings = true,
 }
 
 default_config.select_mode = {

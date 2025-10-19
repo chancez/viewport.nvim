@@ -37,10 +37,13 @@ function M.setup(opts)
       resize_amount = opts.resize_mode.resize_amount,
     },
     stop_after_action = false,
+    display_mappings = opts.resize_mode.display_mappings,
   })
+
   new_mode('navigate', {
     mappings = opts.navigate_mode.mappings,
     stop_after_action = false,
+    display_mappings = opts.navigate_mode.display_mappings,
   })
 
   modes.register('select', select_actions.new_window_selector_mode(

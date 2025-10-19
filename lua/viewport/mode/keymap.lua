@@ -177,6 +177,8 @@ function KeymapManager:set(mode, lhs, rhs, opts)
   -- Store the keymap state for this mapping
   local keymap_state = {
     lhs = lhs,
+    rhs = rhs,
+    opts = opts,
   }
 
   if not self.keymaps[mode] then
@@ -185,6 +187,12 @@ function KeymapManager:set(mode, lhs, rhs, opts)
 
   -- Add to manager's keymaps
   table.insert(self.keymaps[mode], keymap_state)
+end
+
+-- Returns the keymaps set by this manager
+-- @return table The keymaps set by this manager
+function KeymapManager:get_keymaps()
+  return self.keymaps
 end
 
 return M

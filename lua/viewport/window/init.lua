@@ -29,6 +29,23 @@ function Window:details()
     self.id, self:top(), self:bottom(), self:left(), self:right(), self:height(), self:width())
 end
 
+-- Set the position of the window
+-- @param row number The row position to set
+-- @param col number The column position to set
+function Window:set_position(row, col, relative, win)
+  vim.validate('row', row, 'number')
+  vim.validate('col', col, 'number')
+  vim.validate('relative', relative, { 'nil', 'string' })
+  vim.validate('win', win, { 'nil', 'number' })
+
+  vim.api.nvim_win_set_config(self.id, {
+    row = row,
+    col = col,
+    relative = relative,
+    win = win,
+  })
+end
+
 -- Gets the top position of the window
 -- @return number The row position of the top edge
 function Window:top()
@@ -567,17 +584,24 @@ function M.open_popup(opts)
     -- create the buffer and only provide it instead.
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.buf_lines)
   end
+
+  -- Allow overriding any popup config options
   local popup_config = vim.tbl_extend('force', {
-      relative = 'win',
+    relative = 'win',
+    style = 'minimal',
+    noautocmd = true,
+    border = 'rounded',
+  }, opts.config)
+
+  -- If it's relative to the window, set the window and center it
+  if popup_config.relative == 'win' then
+    -- Allow overriding the win, row, and col options if they are provided
+    popup_config = vim.tbl_extend('keep', popup_config, {
       win = win.id,
-      style = 'minimal',
-      -- position in the middle of the window by default
       row = win:height() / 2,
       col = win:width() / 2,
-      noautocmd = true,
-      border = 'rounded',
-    },
-    opts.config)
+    })
+  end
 
   local popup = M.open({
     bufnr = buf,
