@@ -66,8 +66,6 @@ Taken from my [dotfiles](https://github.com/chancez/dotfiles/blob/master/neovim/
 ```lua
 return {
   "chancez/viewport.nvim",
-  dev    = true,
-  lazy   = false,
   keys   = {
     { '<leader>R',    function() require('viewport').start_resize_mode() end,     desc = 'Start resize mode' },
     { '<leader>N',    function() require('viewport').start_navigate_mode() end,   desc = 'Start navigate mode' },
