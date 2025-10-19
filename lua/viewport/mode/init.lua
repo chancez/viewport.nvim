@@ -59,7 +59,7 @@ function Mode.new(config)
     vim.validate("mode", mode, 'string')
     for lhs, rhs in pairs(mappings) do
       vim.validate("lhs", lhs, 'string')
-      vim.validate("rhs", rhs, { 'function', 'callable', 'string' })
+      vim.validate("rhs", rhs, { 'function', 'callable', 'string', 'boolean' })
     end
   end
   return self
@@ -78,34 +78,10 @@ function Mode:start()
 
   for mode, mappings in pairs(self.config.mappings) do
     for lhs, rhs in pairs(mappings) do
-      local desc = ''
-      if getmetatable(rhs) == action.Action then
-        desc = rhs:description()
-      else
-        if type(rhs) == 'function' then
-          desc = "Viewport Action"
-        elseif type(rhs) == 'string' and rhs == 'stop' then
-          desc = "Stop Viewport Mode"
-        elseif type(rhs) == 'string' and rhs == 'toggle_display_mappings' then
-          desc = "Toggle Display Mappings"
-        end
+      -- Allow a user to unset a default mapping by setting it to false
+      if rhs ~= false then
+        self:_add_mapping(mode, lhs, rhs)
       end
-      local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts, { desc = desc })
-      -- Call the rhs function with action_opts when invoked, handling 'stop' specially
-      -- to stop the mode
-      local wrapped_rhs = function()
-        if rhs == 'stop' then
-          self:stop()
-        elseif rhs == 'toggle_display_mappings' then
-          self:toggle_display_mappings()
-        else
-          rhs(self.config.action_opts)
-          if self.config.stop_after_action then
-            self:stop()
-          end
-        end
-      end
-      self.keymap_manager:set(mode, lhs, wrapped_rhs, mapping_opts)
     end
   end
 
@@ -114,6 +90,43 @@ function Mode:start()
   end
 
   self.config.post_start(self)
+end
+
+-- Adds a new mapping to the mode
+-- @param mode string The vim mode for the keymap ('n', 'v', ' i', etc.)
+-- @param lhs string The left-hand side (key sequence) of the mapping
+-- @param rhs function|string The right-hand side (action) of the mapping
+-- @param opts table|nil Options to pass to vim.keymap.set
+function Mode:_add_mapping(mode, lhs, rhs, opts)
+  vim.validate("mode", mode, 'string')
+  vim.validate("lhs", lhs, 'string')
+  vim.validate("rhs", rhs, { 'function', 'callable', 'string' })
+  local desc = ''
+  if getmetatable(rhs) == action.Action then
+    desc = rhs:description()
+  else
+    if type(rhs) == 'function' then
+      desc = "Viewport Action"
+    elseif type(rhs) == 'string' and rhs == 'stop' then
+      desc = "Stop Viewport Mode"
+    elseif type(rhs) == 'string' and rhs == 'toggle_display_mappings' then
+      desc = "Toggle Display Mappings"
+    end
+  end
+  local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts, opts or {}, { desc = desc })
+  local wrapped_rhs = function()
+    if rhs == 'stop' then
+      self:stop()
+    elseif rhs == 'toggle_display_mappings' then
+      self:toggle_display_mappings()
+    else
+      rhs(self.config.action_opts)
+      if self.config.stop_after_action then
+        self:stop()
+      end
+    end
+  end
+  self.keymap_manager:set(mode, lhs, wrapped_rhs, mapping_opts)
 end
 
 -- Displays the current mappings in a popup window

@@ -47,9 +47,12 @@ local preset_mappings = {
 
 -- Retrieves a preset mapping for the given mode and name
 -- @param mode string Mode name ('resize' or 'navigate')
--- @param name string Preset name
+-- @param name string Preset name. Use 'none' for no preset.
 -- @return table Preset mapping table
 function presets.get(mode, name)
+  if name == 'none' then
+    return {}
+  end
   local preset = preset_mappings[mode][name]
   if not preset then
     error(string.format("Invalid preset: %s for mode %s", name, mode))

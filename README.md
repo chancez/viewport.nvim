@@ -33,7 +33,7 @@ require('viewport').setup({
   resize_mode = {
     resize_amount = 5,  -- Amount to resize by (default: 1)
     mappings = {
-      preset = 'relative',  -- 'absolute' or 'relative'
+      preset = 'relative',  -- 'absolute' or 'relative'. Set to 'none' to disable preset mappings.
     },
     display_mappings = true,  -- Show available mappings (default: true)
   },
@@ -229,6 +229,8 @@ require('viewport').setup({
     mappings = {
       preset = 'relative',
       n = {
+        h = false, -- Set default mappings to false to disable them.
+        j = false,
         ['<C-h>'] = require('viewport.actions.resize').relative_resize_left,
         ['<C-j>'] = require('viewport.actions.resize').relative_resize_down,
         -- Add more custom mappings...
