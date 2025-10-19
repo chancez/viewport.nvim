@@ -1,5 +1,6 @@
 local window = require('viewport.window')
 local focus = require('viewport.actions.focus')
+local action = require('viewport.action')
 
 local swap_actions = {}
 
@@ -39,4 +40,4 @@ function swap_actions.swap_right()
   end
 end
 
-return swap_actions
+return action.from_module(swap_actions)

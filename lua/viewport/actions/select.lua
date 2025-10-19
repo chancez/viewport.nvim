@@ -1,12 +1,12 @@
 local window = require('viewport.window')
 local mode = require('viewport.mode')
+local action = require('viewport.action')
 
 local select_actions = {}
 
 -- @class WindowSelectorOpts
 -- @field choices table List of characters to use for selecting windows
 -- @field horizontal_padding number Horizontal padding for the selection popup
--- @field action function Function to call with the selected window
 -- @field exclude_windows table List of window IDs to exclude from selection
 
 -- Default options for select mode
@@ -21,13 +21,13 @@ local WindowSelectorOpts = {
 -- Creates a mode to select a window from the current tabpage. When the mode is
 -- started, a popup is opened above each window with a character to press to
 -- select that window. Once the character is pressed, the corresponding window
--- is passed to the action function provided.
--- @param action function The function to call with the selected window
+-- is passed to the on_select function provided.
+-- @param on_select function The function to call with the selected window
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @return Mode The created selection mode
 -- @error Throws an error if there are more windows than available choices
-function select_actions.new_window_selector_mode(action, opts)
-  vim.validate("action", action, 'function')
+function select_actions.new_window_selector_mode(on_select, opts)
+  vim.validate("on_select", on_select, 'function')
   opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
 
   -- TODO: Move all of this state into a new type or something.
@@ -112,7 +112,7 @@ function select_actions.new_window_selector_mode(action, opts)
       -- reset mappings after stopping to avoid mappings persisting across different executions
       self.config.mappings = {}
       if selected_win then
-        action(selected_win)
+        on_select(selected_win)
       end
     end,
     mapping_opts = { nowait = true },
@@ -192,14 +192,14 @@ function select_actions.new_window_choice_picker(win, choices)
   })
 
   -- no-op if they don't pick anything
-  local action_callback = function(_) end
+  local on_select = function(_) end
 
   local mappings = {}
   for _, choice in ipairs(choices) do
     -- Create a mapping which just sets action_callback
     -- and exits the mode
     mappings[choice.key] = function()
-      action_callback = choice.action
+      on_select = choice.action
     end
   end
 
@@ -215,10 +215,10 @@ function select_actions.new_window_choice_picker(win, choices)
       -- action starts a sub-mode, the mappings this mode created
       -- have already been removed and existing mappings are restored
       -- before the new sub-mode starts.
-      action_callback(win)
+      on_select(win)
     end,
     mapping_opts = { nowait = true },
   }):start()
 end
 
-return select_actions
+return action.from_module(select_actions)

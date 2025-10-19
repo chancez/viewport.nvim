@@ -1,4 +1,5 @@
 local window = require('viewport.window')
+local action = require('viewport.action')
 
 local resize_actions = {}
 
@@ -77,4 +78,5 @@ function resize_actions.relative_resize_right(opts)
   relative_resize("right", opts.resize_amount or 1)
 end
 
-return resize_actions
+-- Convert all the functions into actions with their descriptions based on the function names
+return action.from_module(resize_actions)

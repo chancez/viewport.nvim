@@ -1,4 +1,5 @@
 local keymap = require('viewport.mode.keymap')
+local action = require('viewport.action')
 
 local M = {}
 
@@ -45,13 +46,14 @@ function Mode.new(config)
   self.active = false
   self.keymap_manager = keymap.new()
   self.config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
+  self.mappings_window = nil
   -- validate mappings
   vim.validate("mappings", self.config.mappings, 'table')
   for mode, mappings in pairs(self.config.mappings) do
     vim.validate("mode", mode, 'string')
     for lhs, rhs in pairs(mappings) do
       vim.validate("lhs", lhs, 'string')
-      vim.validate("rhs", rhs, { 'function', 'string' })
+      vim.validate("rhs", rhs, { 'function', 'callable', 'string' })
     end
   end
   return self
@@ -68,10 +70,22 @@ function Mode:start()
   local modes = vim.tbl_keys(self.config.mappings)
   self.keymap_manager:save(modes)
 
-  local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts)
   for mode, mappings in pairs(self.config.mappings) do
     for lhs, rhs in pairs(mappings) do
-      self.keymap_manager:set(mode, lhs, function()
+      local desc = ''
+      if getmetatable(rhs) == action.Action then
+        desc = rhs:description()
+      else
+        if type(rhs) == 'function' then
+          desc = "Viewport Action"
+        elseif type(rhs) == 'string' and rhs == 'stop' then
+          desc = "Stop Viewport Mode"
+        end
+      end
+      local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts, { desc = desc })
+      -- Call the rhs function with action_opts when invoked, handling 'stop' specially
+      -- to stop the mode
+      local wrapped_rhs = function()
         if rhs == 'stop' then
           self:stop()
         else
@@ -80,7 +94,8 @@ function Mode:start()
             self:stop()
           end
         end
-      end, mapping_opts)
+      end
+      self.keymap_manager:set(mode, lhs, wrapped_rhs, mapping_opts)
     end
   end
 

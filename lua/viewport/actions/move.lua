@@ -1,4 +1,5 @@
 local window = require('viewport.window')
+local action = require('viewport.action')
 
 local move_actions = {}
 
@@ -30,4 +31,4 @@ function move_actions.move_right()
   move_window("right")
 end
 
-return move_actions
+return action.from_module(move_actions)

@@ -1,4 +1,5 @@
 local window = require('viewport.window')
+local action = require('viewport.action')
 
 local focus_actions = {}
 
@@ -22,4 +23,4 @@ function focus_actions.focus_right()
   window.new():focus_direction("right")
 end
 
-return focus_actions
+return action.from_module(focus_actions)
