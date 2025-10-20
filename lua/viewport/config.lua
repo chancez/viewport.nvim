@@ -50,6 +50,14 @@ default_config.select_mode = {
       end
     },
     {
+      key = 'o',
+      text = "[o]nly",
+      action = function(win)
+        win:focus()
+        vim.cmd('only')
+      end
+    },
+    {
       key = 'h',
       text = "[h]orizontal split",
       action = function(win)
