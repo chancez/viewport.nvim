@@ -59,4 +59,14 @@ function M.start(name)
   mode_instance:start()
 end
 
+-- Returns the currently active mode if any
+-- @return Mode|nil The active mode instance or nil
+function M.get_active_mode()
+  local active_mode_name = vim.g.viewport_active_mode
+  if active_mode_name then
+    return registry[active_mode_name]
+  end
+  return nil
+end
+
 return M

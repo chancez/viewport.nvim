@@ -1,6 +1,7 @@
 local window = require('viewport.window')
 local mode = require('viewport.mode')
 local action = require('viewport.action')
+local modes = require('viewport.modes')
 
 local select_actions = {}
 
@@ -93,10 +94,17 @@ function select_actions.new_window_selector_mode(on_select, opts)
     end
   end
 
+  local should_restore_mode_mappings_display = false
+
   -- TODO: Find a way to disable other mappings and log a warning
   return mode.new({
     -- Mappings will be populated dynamically in pre_start
     pre_start = function(self)
+      local current_mode = modes.get_active_mode()
+      if current_mode and current_mode:is_mappings_display_shown() then
+        should_restore_mode_mappings_display = true
+        current_mode:close_mappings_display()
+      end
       create_popups()
       -- assign the generated keymaps after popups are created
       self.config.mappings = {
@@ -113,6 +121,12 @@ function select_actions.new_window_selector_mode(on_select, opts)
       self.config.mappings = {}
       if selected_win then
         on_select(selected_win)
+      end
+      if should_restore_mode_mappings_display then
+        local current_mode = modes.get_active_mode()
+        if current_mode then
+          current_mode:show_mappings_display()
+        end
       end
     end,
     mapping_opts = { nowait = true },
