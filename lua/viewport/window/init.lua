@@ -385,7 +385,7 @@ end
 -- Gets the buffer displayed in this window
 -- @return number The buffer number
 function Window:get_buffer()
-  if not self.id then
+  if not self.id or not vim.api.nvim_win_is_valid(self.id) then
     return nil
   end
   return vim.api.nvim_win_get_buf(self.id)
