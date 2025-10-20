@@ -44,14 +44,14 @@ default_config.select_mode = {
     },
     {
       key = 'c',
-      text = "[c]close",
+      text = "[c]lose",
       action = function(win)
         win:close()
       end
     },
     {
       key = 'h',
-      text = "[h]orzontal split",
+      text = "[h]orizontal split",
       action = function(win)
         win:split_horizontal(true)
       end
