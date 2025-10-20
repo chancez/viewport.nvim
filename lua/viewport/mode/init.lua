@@ -1,6 +1,7 @@
 local keymap = require('viewport.mode.keymap')
 local action = require('viewport.action')
 local window = require('viewport.window')
+local utils = require('viewport.utils')
 
 local M = {}
 
@@ -161,21 +162,34 @@ function Mode:show_display_mappings()
       focusable = false,
     },
   })
-  -- Move the window when the active window changes
-  self.mapping_window_autocmd_id = vim.api.nvim_create_autocmd("WinEnter", {
-    callback = function()
-      if self.mappings_window then
-        local win = window.new()
-        -- center of current window
-        self.mappings_window:set_position(
-          win:height() / 2, -- row
-          win:width() / 2,  -- col
-          'win',            -- relative
-          win.id            -- win
-        )
-      end
-    end,
-  })
+
+  local current_win = window.new()
+  local debounce_update_window = utils.debounce(function(args)
+    -- Only update if the window that changed is the one we are tracking
+    if args.buf ~= current_win:get_buffer() then
+      return
+    end
+    if self.mappings_window then
+      current_win = window.new()
+      -- center of current window
+      self.mappings_window:set_position(
+      -- Centering requires taking into account the size of the popup
+        (current_win:height() - self.mappings_window:height()) / 2, -- row
+        (current_win:width() - self.mappings_window:width()) / 2,   -- col
+        'win',                                                      -- relative
+        current_win.id                                              -- win
+      )
+    end
+  end, 100)
+  --
+  -- Move the window when the active window changes, or when resized
+  self.mapping_window_autocmd_id = vim.api.nvim_create_autocmd(
+    { "WinLeave", "WinResized" },
+    {
+      callback = function(args)
+        debounce_update_window(args)
+      end,
+    })
 end
 
 -- Closes the mappings display popup

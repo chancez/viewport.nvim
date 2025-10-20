@@ -598,8 +598,9 @@ function M.open_popup(opts)
     -- Allow overriding the win, row, and col options if they are provided
     popup_config = vim.tbl_extend('keep', popup_config, {
       win = win.id,
-      row = win:height() / 2,
-      col = win:width() / 2,
+      -- Centering requires taking into account the size of the popup
+      row = (win:height() - (popup_config.height or 0)) / 2,
+      col = (win:width() - (popup_config.width or 0)) / 2,
     })
   end
 
