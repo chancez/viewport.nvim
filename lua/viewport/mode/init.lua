@@ -87,7 +87,7 @@ function Mode:start()
   end
 
   if self.config.display_mappings then
-    self:show_display_mappings()
+    self:show_mappings_display()
   end
 
   self.config.post_start(self)
@@ -119,7 +119,7 @@ function Mode:_add_mapping(mode, lhs, rhs, opts)
     if rhs == 'stop' then
       self:stop()
     elseif rhs == 'toggle_display_mappings' then
-      self:toggle_display_mappings()
+      self:toggle_mappings_display()
     else
       rhs(self.config.action_opts)
       if self.config.stop_after_action then
@@ -131,7 +131,7 @@ function Mode:_add_mapping(mode, lhs, rhs, opts)
 end
 
 -- Displays the current mappings in a popup window
-function Mode:show_display_mappings()
+function Mode:show_mappings_display()
   -- TODO: Handle mode changes. Currently most modes are normal only, and esc exits the modes
   local mappings = self.keymap_manager:get_keymaps().n
   local lines = {
@@ -181,7 +181,6 @@ function Mode:show_display_mappings()
       )
     end
   end, 100)
-  --
   -- Move the window when the active window changes, or when resized
   self.mapping_window_autocmd_id = vim.api.nvim_create_autocmd(
     { "WinLeave", "WinResized" },
@@ -193,7 +192,7 @@ function Mode:show_display_mappings()
 end
 
 -- Closes the mappings display popup
-function Mode:close_display_mappings()
+function Mode:close_mappings_display()
   if self.mapping_window_autocmd_id then
     vim.api.nvim_del_autocmd(self.mapping_window_autocmd_id)
     self.mapping_window_autocmd_id = nil
@@ -205,18 +204,23 @@ function Mode:close_display_mappings()
 end
 
 -- Toggles the display of the mappings popup
-function Mode:toggle_display_mappings()
+function Mode:toggle_mappings_display()
   if self.mappings_window then
-    self:close_display_mappings()
+    self:close_mappings_display()
   else
-    self:show_display_mappings()
+    self:show_mappings_display()
   end
+end
+
+-- Reports the state of the mapping display
+function Mode:is_mappings_display_shown()
+  return self.mappings_window ~= nil
 end
 
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
   self.config.pre_stop(self)
-  self:close_display_mappings()
+  self:close_mappings_display()
   self.keymap_manager:restore()
   self.config.post_stop(self)
   self.active = false
