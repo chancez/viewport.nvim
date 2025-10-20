@@ -13,15 +13,15 @@ local Mode = {}
 Mode.__index = Mode
 
 -- @class ModeConfig
--- @field mappings table Table of key mappings for the mode
+-- @field mappings table Table of key mappings for the mode. Can be modified in pre_start hook for dynamic mappings.
 -- @field action_opts table Options to pass to action functions
 -- @field mapping_opts table Options to pass to vim.keymap.set
 -- @field stop_after_action boolean Whether to stop the mode after an action is performed
 -- @field display_mappings boolean Whether to display mappings in a popup when the mode starts
--- @field pre_start function Function called before mode starts
--- @field post_start function Function called after mode starts
--- @field pre_stop function Function called before mode stops
--- @field post_stop function Function called after mode stops
+-- @field pre_start function Function called before mode starts. Receives the mode instance as parameter.
+-- @field post_start function Function called after mode starts. Receives the mode instance as parameter.
+-- @field pre_stop function Function called before mode stops. Receives the mode instance as parameter.
+-- @field post_stop function Function called after mode stops. Receives the mode instance as parameter.
 
 -- Default configuration for modes
 -- @type ModeConfig
