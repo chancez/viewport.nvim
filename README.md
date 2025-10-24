@@ -11,6 +11,10 @@ A modal window management plugin for Neovim that provides intuitive modes for re
 - **Preset Keymaps**: Pre-configured keybindings for common workflows
 - **Extensible**: Customize mappings and actions to fit your workflow
 
+## Showcase
+
+[![asciicast](https://asciinema.org/a/D8fLp5dQZyG0WHbj6vKSikQof.svg)](https://asciinema.org/a/D8fLp5dQZyG0WHbj6vKSikQof)
+
 ## Installation
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
