@@ -181,13 +181,13 @@ end
 -- @class Choice
 -- @field key string Key to press to select this choice
 -- @field text string Text to display for the choice
--- @field action function Function to call when the choice is selected
+-- @field action function|string Action to perform when the choice is selected
 
 -- @class WindowChoicePickerMode
 -- @field win Window The window to open the popup in
 -- @field choices Choice[] List of choices
 -- @field popup Window|nil The popup window
--- @field selected_action function|nil The selected action
+-- @field selected_action function|string|nil The selected action
 -- @field mode Mode The underlying mode instance
 local WindowChoicePickerMode = {}
 WindowChoicePickerMode.__index = WindowChoicePickerMode
@@ -198,7 +198,7 @@ function WindowChoicePickerMode.new(win, choices)
   for _, choice in ipairs(choices) do
     vim.validate("choice.key", choice.key, 'string')
     vim.validate("choice.text", choice.text, 'string')
-    vim.validate("choice.action", choice.action, 'function')
+    vim.validate("choice.action", choice.action, { 'function', 'string' })
   end
 
   local self = setmetatable({}, WindowChoicePickerMode)
@@ -212,7 +212,11 @@ end
 
 function WindowChoicePickerMode:_create_popup()
   local lines = { "Choose action:" }
+  local width = #lines[1]
   for _, choice in pairs(self.choices) do
+    if #choice.text > width then
+      width = #choice.text
+    end
     table.insert(lines, choice.text)
   end
 
@@ -220,7 +224,7 @@ function WindowChoicePickerMode:_create_popup()
     win = self.win,
     buf_lines = lines,
     config = {
-      width = 20,
+      width = width,
       height = #lines,
       title = "actions",
       title_pos = "center",
@@ -251,7 +255,9 @@ function WindowChoicePickerMode:_create_mode()
       end
 
       if self.selected_action then
-        self.selected_action(self.win)
+        if type(self.selected_action) == 'function' then
+          self.selected_action(self.win)
+        end
         self.selected_action = nil
       end
     end,

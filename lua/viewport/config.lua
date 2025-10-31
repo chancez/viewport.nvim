@@ -71,6 +71,11 @@ default_config.select_mode = {
         win:split_vertical(true)
       end
     },
+    {
+      key = '<Esc>',
+      text = '[Esc] - stop',
+      action = 'stop',
+    },
   }
 }
 
