@@ -8,7 +8,8 @@ local select_actions = {}
 -- @class WindowSelectorOpts
 -- @field choices table List of characters to use for selecting windows
 -- @field horizontal_padding number Horizontal padding for the selection popup
--- @field exclude_windows table List of window IDs to exclude from selection
+-- @field should_exclude_window function Function that takes a window id and
+-- returns true if it should be excluded from selection
 
 -- Default options for select mode
 -- @type WindowSelectorOpts
@@ -16,7 +17,7 @@ local WindowSelectorOpts = {
   -- Use letters a-z to select windows
   choices = vim.split('abcdefghijklmnopqrstuvwxyz', ''),
   horizontal_padding = 4,
-  exclude_windows = {},
+  should_exclude_window = function(_) return false end
 }
 
 -- @class WindowSelectorMode
@@ -57,7 +58,7 @@ function WindowSelectorMode:_create_popups()
   local keymaps = { ['<Esc>'] = 'stop' }
 
   for i, win in ipairs(windows) do
-    if not vim.tbl_contains(self.opts.exclude_windows, win.id) then
+    if not self.opts.should_exclude_window(win.id) then
       local choice = self.opts.choices[i]
       local text = "[" .. choice .. "]"
       local width = #text + self.opts.horizontal_padding
@@ -159,23 +160,22 @@ end
 -- Creates a mode to select a window from the current tabpage. When the mode is
 -- started, a popup is opened above each window with a character to press to
 -- select that window. Once the character is pressed, the specified window
--- is swapped with the selected window.
--- @param win number|Window The window to swap with. If nil, uses the current window.
+-- is swapped with the current window.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function select_actions.new_swap_mode(win, opts)
-  win = win or window.new()
-  if type(win) == 'number' then
-    win = window.new(win)
-  end
+function select_actions.new_swap_mode(opts)
   -- Create a mode that swaps the selected window with the specified window
   return select_actions.new_window_selector_mode(
     function(other_win)
-      win:swap(other_win)
+      local current_win = window.new()
+      current_win:swap(other_win)
     end,
     vim.tbl_extend('keep', {
       -- When swapping, don't allow selecting the window already selected
-      exclude_windows = { win.id },
+      should_exclude_window = function(win_id)
+        local current_win = window.new()
+        return win_id == current_win.id
+      end,
     }, opts or {}))
 end
 
