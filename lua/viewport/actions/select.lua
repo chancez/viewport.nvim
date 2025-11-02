@@ -27,21 +27,25 @@ local WindowSelectorOpts = {
 -- @field mode Mode The underlying mode instance
 local WindowSelectorMode = {}
 WindowSelectorMode.__index = WindowSelectorMode
+-- WindowSelectorMode inherits from Mode
+setmetatable(WindowSelectorMode, { __index = mode.Mode })
 
 function WindowSelectorMode.new(on_select, opts)
   vim.validate("on_select", on_select, 'function')
-  local self = setmetatable({}, WindowSelectorMode)
+  vim.validate("opts", opts, { 'nil', 'table' })
+
+  local self = mode.new({
+    mapping_opts = { nowait = true },
+  })
+
+  setmetatable(self, WindowSelectorMode)
+
   self.opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
   self.on_select = on_select
-  self:_reset()
-  self.mode = self:_create_mode()
-  return self
-end
-
-function WindowSelectorMode:_reset()
   self.popups = {}
   self.selected_win = nil
   self.should_restore_mappings_display = false
+  return self
 end
 
 function WindowSelectorMode:_create_popups()
@@ -82,6 +86,41 @@ function WindowSelectorMode:_create_popups()
   return keymaps
 end
 
+function WindowSelectorMode:pre_start()
+  local current_mode = modes.get_active_mode()
+  if current_mode and current_mode:is_mappings_display_shown() then
+    self.should_restore_mappings_display = true
+    current_mode:close_mappings_display()
+  end
+
+  local keymaps = self:_create_popups()
+  self.config.mappings = { n = keymaps }
+  mode.Mode.pre_start(self)
+end
+
+function WindowSelectorMode:pre_stop()
+  self:_close_popups()
+  mode.Mode.pre_stop(self)
+end
+
+function WindowSelectorMode:post_stop()
+  if self.selected_win then
+    self.on_select(self.selected_win)
+  end
+
+  if self.should_restore_mappings_display then
+    local current_mode = modes.get_active_mode()
+    if current_mode then
+      current_mode:show_mappings_display()
+    end
+  end
+
+  self.popups = {}
+  self.selected_win = nil
+  self.should_restore_mappings_display = false
+  mode.Mode.post_stop(self)
+end
+
 function WindowSelectorMode:_close_popups()
   for _, popup in ipairs(self.popups) do
     popup:delete_buffer()
@@ -90,44 +129,6 @@ function WindowSelectorMode:_close_popups()
 end
 
 function WindowSelectorMode:_create_mode()
-  return mode.new({
-    pre_start = function(m)
-      local current_mode = modes.get_active_mode()
-      if current_mode and current_mode:is_mappings_display_shown() then
-        self.should_restore_mappings_display = true
-        current_mode:close_mappings_display()
-      end
-
-      local keymaps = self:_create_popups()
-      m.config.mappings = { n = keymaps }
-    end,
-    pre_stop = function()
-      self:_close_popups()
-    end,
-    post_stop = function()
-      if self.selected_win then
-        self.on_select(self.selected_win)
-      end
-
-      if self.should_restore_mappings_display then
-        local current_mode = modes.get_active_mode()
-        if current_mode then
-          current_mode:show_mappings_display()
-        end
-      end
-
-      self:_reset()
-    end,
-    mapping_opts = { nowait = true },
-  })
-end
-
-function WindowSelectorMode:start()
-  self.mode:start()
-end
-
-function WindowSelectorMode:stop()
-  self.mode:stop()
 end
 
 -- Creates a mode to select a window from the current tabpage. When the mode is
@@ -139,7 +140,7 @@ end
 -- @return Mode The created selection mode
 -- @error Throws an error if there are more windows than available choices
 function select_actions.new_window_selector_mode(on_select, opts)
-  return WindowSelectorMode.new(on_select, opts).mode
+  return WindowSelectorMode.new(on_select, opts)
 end
 
 -- Starts a mode to select a window from the current tabpage and focuses it
@@ -191,6 +192,7 @@ end
 -- @field mode Mode The underlying mode instance
 local WindowChoicePickerMode = {}
 WindowChoicePickerMode.__index = WindowChoicePickerMode
+setmetatable(WindowChoicePickerMode, { __index = mode.Mode })
 
 function WindowChoicePickerMode.new(win, choices)
   vim.validate("win", win, { 'number', 'table' })
@@ -201,12 +203,15 @@ function WindowChoicePickerMode.new(win, choices)
     vim.validate("choice.action", choice.action, { 'function', 'string' })
   end
 
-  local self = setmetatable({}, WindowChoicePickerMode)
+  local self = mode.new({
+    mapping_opts = { nowait = true },
+  })
+  setmetatable(self, WindowChoicePickerMode)
+
   self.win = win
   self.choices = choices
   self.popup = nil
   self.selected_action = nil
-  self.mode = self:_create_mode()
   return self
 end
 
@@ -242,31 +247,25 @@ function WindowChoicePickerMode:_create_mappings()
   return mappings
 end
 
-function WindowChoicePickerMode:_create_mode()
-  return mode.new({
-    pre_start = function(m)
-      self:_create_popup()
-      m.config.mappings = { n = self:_create_mappings() }
-    end,
-    post_stop = function()
-      if self.popup then
-        self.popup:delete_buffer()
-        self.popup = nil
-      end
-
-      if self.selected_action then
-        if type(self.selected_action) == 'function' then
-          self.selected_action(self.win)
-        end
-        self.selected_action = nil
-      end
-    end,
-    mapping_opts = { nowait = true },
-  })
+function WindowChoicePickerMode:pre_start()
+  self:_create_popup()
+  self.config.mappings = { n = self:_create_mappings() }
+  mode.Mode.pre_start(self)
 end
 
-function WindowChoicePickerMode:start()
-  self.mode:start()
+function WindowChoicePickerMode:post_stop()
+  if self.popup then
+    self.popup:delete_buffer()
+    self.popup = nil
+  end
+
+  if self.selected_action then
+    if type(self.selected_action) == 'function' then
+      self.selected_action(self.win)
+    end
+    self.selected_action = nil
+  end
+  mode.Mode.post_stop(self)
 end
 
 -- Opens a popup in the specified window with a list of choices. The user can

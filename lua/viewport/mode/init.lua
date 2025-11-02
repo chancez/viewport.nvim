@@ -13,7 +13,7 @@ local Mode = {}
 Mode.__index = Mode
 
 -- @class ModeConfig
--- @field mappings table Table of key mappings for the mode. Can be modified in pre_start hook for dynamic mappings.
+-- @field mappings table|nil Table of key mappings for the mode. Can be modified in pre_start hook for dynamic mappings.
 -- @field action_opts table Options to pass to action functions
 -- @field mapping_opts table Options to pass to vim.keymap.set
 -- @field stop_after_action boolean Whether to stop the mode after an action is performed
@@ -49,20 +49,22 @@ local default_mode_opts = {
 -- @param config ModeConfig|nil Configuration for the mode
 -- @return Mode A new Mode instance
 function Mode.new(config)
-  local self = setmetatable({}, Mode)
-  self.active = false
-  self.keymap_manager = keymap.new()
-  self.config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
-  self.mappings_window = nil
-  -- validate mappings
-  vim.validate("mappings", self.config.mappings, 'table')
-  for mode, mappings in pairs(self.config.mappings) do
+  config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
+  vim.validate("config", config, 'table')
+  vim.validate("mappings", config.mappings, 'table')
+  for mode, mappings in pairs(config.mappings) do
     vim.validate("mode", mode, 'string')
     for lhs, rhs in pairs(mappings) do
       vim.validate("lhs", lhs, 'string')
       vim.validate("rhs", rhs, { 'function', 'callable', 'string', 'boolean' })
     end
   end
+
+  local self = setmetatable({}, Mode)
+  self.active = false
+  self.keymap_manager = keymap.new()
+  self.config = config
+  self.mappings_window = nil
   return self
 end
 
