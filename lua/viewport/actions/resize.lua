@@ -24,56 +24,56 @@ end
 
 -- Resizes the current window upward
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.resize_up(opts)
+function resize_actions.resize_up(_, opts)
   opts = opts or {}
   resize("up", opts.resize_amount or 1)
 end
 
 -- Resizes the current window downward
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.resize_down(opts)
+function resize_actions.resize_down(_, opts)
   opts = opts or {}
   resize("down", opts.resize_amount or 1)
 end
 
 -- Resizes the current window leftward
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.resize_left(opts)
+function resize_actions.resize_left(_, opts)
   opts = opts or {}
   resize("left", opts.resize_amount or 1)
 end
 
 -- Resizes the current window rightward
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.resize_right(opts)
+function resize_actions.resize_right(_, opts)
   opts = opts or {}
   resize("right", opts.resize_amount or 1)
 end
 
 -- Resizes the current window upward relative to neighbors
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.relative_resize_up(opts)
+function resize_actions.relative_resize_up(_, opts)
   opts = opts or {}
   relative_resize("up", opts.resize_amount or 1)
 end
 
 -- Resizes the current window downward relative to neighbors
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.relative_resize_down(opts)
+function resize_actions.relative_resize_down(_, opts)
   opts = opts or {}
   relative_resize("down", opts.resize_amount or 1)
 end
 
 -- Resizes the current window leftward relative to neighbors
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.relative_resize_left(opts)
+function resize_actions.relative_resize_left(_, opts)
   opts = opts or {}
   relative_resize("left", opts.resize_amount or 1)
 end
 
 -- Resizes the current window rightward relative to neighbors
 -- @param opts ResizeActionOpts|nil Options containing resize amount
-function resize_actions.relative_resize_right(opts)
+function resize_actions.relative_resize_right(_, opts)
   opts = opts or {}
   relative_resize("right", opts.resize_amount or 1)
 end

@@ -12,22 +12,22 @@ local function move_window(direction)
 end
 
 -- Moves the current window up
-function move_actions.move_up()
+function move_actions.move_up(_, _)
   move_window("up")
 end
 
 -- Moves the current window down
-function move_actions.move_down()
+function move_actions.move_down(_, _)
   move_window("down")
 end
 
 -- Moves the current window left
-function move_actions.move_left()
+function move_actions.move_left(_, _)
   move_window("left")
 end
 
 -- Moves the current window right
-function move_actions.move_right()
+function move_actions.move_right(_, _)
   move_window("right")
 end
 

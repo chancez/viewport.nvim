@@ -82,7 +82,13 @@ default_config.select_mode = {
     {
       key = '<Esc>',
       text = '[Esc] - stop',
-      action = 'stop',
+      action = function(_)
+        -- TODO: Use mode_actions.stop
+        local current_mode = require('viewport.modes').get_active_mode()
+        if current_mode then
+          current_mode:stop()
+        end
+      end,
     },
   }
 }

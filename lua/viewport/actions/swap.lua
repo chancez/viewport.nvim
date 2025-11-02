@@ -13,28 +13,28 @@ local function swap_window_direction(direction)
 end
 
 -- Swaps the current window with the one above and focuses it
-function swap_actions.swap_above()
+function swap_actions.swap_above(_, _)
   if swap_window_direction("up") then
     focus.focus_above()
   end
 end
 
 -- Swaps the current window with the one below and focuses it
-function swap_actions.swap_below()
+function swap_actions.swap_below(_, _)
   if swap_window_direction("down") then
     focus.focus_below()
   end
 end
 
 -- Swaps the current window with the one to the left and focuses it
-function swap_actions.swap_left()
+function swap_actions.swap_left(_, _)
   if swap_window_direction("left") then
     focus.focus_left()
   end
 end
 
 -- Swaps the current window with the one to the right and focuses it
-function swap_actions.swap_right()
+function swap_actions.swap_right(_, _)
   if swap_window_direction("right") then
     focus.focus_right()
   end

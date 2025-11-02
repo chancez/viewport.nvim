@@ -1,8 +1,10 @@
 local keymap = require('viewport.mode.keymap')
+
 local action = require('viewport.action')
 local window = require('viewport.window')
 local utils = require('viewport.utils')
 local extend = require('viewport.extend')
+local mode_actions = require('viewport.mode.actions')
 
 local M = {}
 
@@ -28,12 +30,9 @@ Mode.__index = Mode
 -- @type ModeConfig
 local default_mode_opts = {
   mappings = {
-    i = {
-      ['<Esc>'] = 'stop',
-    },
     n = {
-      ['<Esc>'] = 'stop',
-      ['<Tab>'] = 'toggle_display_mappings',
+      ['<Esc>'] = mode_actions.stop,
+      ['<Tab>'] = mode_actions.toggle_display_mappings,
     }
   },
   action_opts = {},
@@ -57,7 +56,7 @@ function Mode.new(config)
     vim.validate("mode", mode, 'string')
     for lhs, rhs in pairs(mappings) do
       vim.validate("lhs", lhs, 'string')
-      vim.validate("rhs", rhs, { 'function', 'callable', 'string', 'boolean' })
+      vim.validate("rhs", rhs, { 'callable', 'boolean' })
     end
   end
 
@@ -104,30 +103,18 @@ end
 function Mode:_add_mapping(mode, lhs, rhs, opts)
   vim.validate("mode", mode, 'string')
   vim.validate("lhs", lhs, 'string')
-  vim.validate("rhs", rhs, { 'function', 'callable', 'string' })
+  vim.validate("rhs", rhs, { 'callable', 'string' })
   local desc = ''
   if getmetatable(rhs) == action.Action then
     desc = rhs:description()
   else
-    if type(rhs) == 'function' then
-      desc = "Viewport Action"
-    elseif type(rhs) == 'string' and rhs == 'stop' then
-      desc = "Stop Viewport Mode"
-    elseif type(rhs) == 'string' and rhs == 'toggle_display_mappings' then
-      desc = "Toggle Display Mappings"
-    end
+    desc = "Viewport Action"
   end
   local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts, opts or {}, { desc = desc })
   local wrapped_rhs = function()
-    if rhs == 'stop' then
+    rhs(self, self.config.action_opts)
+    if self.config.stop_after_action then
       self:stop()
-    elseif rhs == 'toggle_display_mappings' then
-      self:toggle_mappings_display()
-    else
-      rhs(self.config.action_opts)
-      if self.config.stop_after_action then
-        self:stop()
-      end
     end
   end
   self.keymap_manager:set(mode, lhs, wrapped_rhs, mapping_opts)

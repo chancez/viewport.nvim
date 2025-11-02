@@ -2,6 +2,7 @@ local window = require('viewport.window')
 local mode = require('viewport.mode')
 local action = require('viewport.action')
 local modes = require('viewport.modes')
+local mode_actions = require('viewport.mode.actions')
 
 local select_actions = {}
 
@@ -31,6 +32,13 @@ WindowSelectorMode.__index = WindowSelectorMode
 -- WindowSelectorMode inherits from Mode
 setmetatable(WindowSelectorMode, { __index = mode.Mode })
 
+-- Creates a mode to select a window from the current tabpage. When the mode is
+-- started, a popup is opened above each window with a character to press to
+-- select that window. Once the character is pressed, the corresponding window
+-- is passed to the on_select function provided.
+-- @param on_select function The function to call with the selected window
+-- @param opts WindowSelectorOpts|nil Options for selection mode
+-- @return WindowSelectorMode The created selection mode
 function WindowSelectorMode.new(on_select, opts)
   vim.validate("on_select", on_select, 'function')
   vim.validate("opts", opts, { 'nil', 'table' })
@@ -55,7 +63,10 @@ function WindowSelectorMode:_create_popups()
     error("Too many windows to select from. Max is " .. #self.opts.choices)
   end
 
-  local keymaps = { ['<Esc>'] = 'stop' }
+  local keymaps = {
+    -- Ensure stop mapping is present by default
+    ['<Esc>'] = mode_actions.stop,
+  }
 
   for i, win in ipairs(windows) do
     if not self.opts.should_exclude_window(win.id) then
@@ -78,7 +89,7 @@ function WindowSelectorMode:_create_popups()
       })
 
       table.insert(self.popups, popup)
-      keymaps[choice] = function()
+      keymaps[choice] = function(_, _)
         self.selected_win = win
       end
     end
@@ -132,14 +143,7 @@ end
 function WindowSelectorMode:_create_mode()
 end
 
--- Creates a mode to select a window from the current tabpage. When the mode is
--- started, a popup is opened above each window with a character to press to
--- select that window. Once the character is pressed, the corresponding window
--- is passed to the on_select function provided.
--- @param on_select function The function to call with the selected window
--- @param opts WindowSelectorOpts|nil Options for selection mode
--- @return Mode The created selection mode
--- @error Throws an error if there are more windows than available choices
+-- TODO: Remove this
 function select_actions.new_window_selector_mode(on_select, opts)
   return WindowSelectorMode.new(on_select, opts)
 end
@@ -148,8 +152,8 @@ end
 -- when selected.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
-function select_actions.select_window(opts)
-  select_actions.new_window_selector_mode(
+function select_actions.select_window(_, opts)
+  WindowSelectorMode.new(
     function(win)
       win:focus()
     end,
@@ -163,9 +167,10 @@ end
 -- is swapped with the current window.
 -- @param opts WindowSelectorOpts|nil Options for selection mode
 -- @error Throws an error if there are more windows than available choices
+-- TODO: Convert to a mode or move it
 function select_actions.new_swap_mode(opts)
   -- Create a mode that swaps the selected window with the specified window
-  return select_actions.new_window_selector_mode(
+  return WindowSelectorMode.new(
     function(other_win)
       local current_win = window.new()
       current_win:swap(other_win)
@@ -194,6 +199,11 @@ local WindowChoicePickerMode = {}
 WindowChoicePickerMode.__index = WindowChoicePickerMode
 setmetatable(WindowChoicePickerMode, { __index = mode.Mode })
 
+-- Creates a mode that opens a popup in the specified window with a list of
+-- choices. The user can press the key corresponding to a choice to execute its
+-- action.
+-- @param win number|Window The window to open the popup in
+-- @param choices Choice[] List of choices to present to the user
 function WindowChoicePickerMode.new(win, choices)
   vim.validate("win", win, { 'number', 'table' })
   vim.validate("choices", choices, 'table')
@@ -238,9 +248,12 @@ function WindowChoicePickerMode:_create_popup()
 end
 
 function WindowChoicePickerMode:_create_mappings()
-  local mappings = {}
+  -- Ensure stop mapping is present by default
+  local mappings = {
+    ['<Esc>'] = mode_actions.stop,
+  }
   for _, choice in ipairs(self.choices) do
-    mappings[choice.key] = function()
+    mappings[choice.key] = function(_, _)
       self.selected_action = choice.action
     end
   end
@@ -268,11 +281,7 @@ function WindowChoicePickerMode:post_stop()
   mode.Mode.post_stop(self)
 end
 
--- Opens a popup in the specified window with a list of choices. The user can
--- press the key corresponding to a choice to execute its action.
--- @param win number|Window The window to open the popup in
--- @param choices Choice[] List of choices to present to the user
--- @error Throws an error if the parameters are invalid
+-- TODO: Remove this function and use WindowChoicePickerMode directly
 function select_actions.new_window_choice_picker(win, choices)
   WindowChoicePickerMode.new(win, choices):start()
 end

@@ -3,6 +3,7 @@ local swap_actions = require('viewport.actions.swap')
 local focus_actions = require('viewport.actions.focus')
 local select_actions = require('viewport.actions.select')
 local zoom_actions = require('viewport.actions.zoom')
+local mode_actions = require('viewport.mode.actions')
 
 local presets = {}
 
@@ -14,7 +15,7 @@ local preset_mappings = {
         ['j'] = resize_actions.resize_down,
         ['h'] = resize_actions.resize_left,
         ['l'] = resize_actions.resize_right,
-        ['<Esc>'] = 'stop',
+        ['<Esc>'] = mode_actions.stop,
       },
     },
     relative = {
@@ -23,7 +24,7 @@ local preset_mappings = {
         ['j'] = resize_actions.relative_resize_down,
         ['h'] = resize_actions.relative_resize_left,
         ['l'] = resize_actions.relative_resize_right,
-        ['<Esc>'] = 'stop',
+        ['<Esc>'] = mode_actions.stop,
       },
     },
 
@@ -41,7 +42,7 @@ local preset_mappings = {
         ['L'] = swap_actions.swap_right,
         ['s'] = select_actions.select_window,
         ['z'] = zoom_actions.toggle_maximize,
-        ['<Esc>'] = 'stop',
+        ['<Esc>'] = mode_actions.stop,
       },
     },
   },
