@@ -72,6 +72,14 @@ default_config.select_mode = {
       end
     },
     {
+      key = 'm',
+      text = "[m]aximize",
+      action = function(win)
+        win:focus()
+        require('viewport.actions.zoom').maximize()
+      end
+    },
+    {
       key = '<Esc>',
       text = '[Esc] - stop',
       action = 'stop',

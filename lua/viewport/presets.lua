@@ -2,6 +2,7 @@ local resize_actions = require('viewport.actions.resize')
 local swap_actions = require('viewport.actions.swap')
 local focus_actions = require('viewport.actions.focus')
 local select_actions = require('viewport.actions.select')
+local zoom_actions = require('viewport.actions.zoom')
 
 local presets = {}
 
@@ -39,6 +40,7 @@ local preset_mappings = {
         ['H'] = swap_actions.swap_left,
         ['L'] = swap_actions.swap_right,
         ['s'] = select_actions.select_window,
+        ['z'] = zoom_actions.toggle_maximize,
         ['<Esc>'] = 'stop',
       },
     },
