@@ -18,9 +18,6 @@ end
 -- @param name string|nil Mode name or nil if no active mode
 local function set_active_mode(name)
   -- Check if mode is already set, and store previous mode
-  if vim.g.viewport_active_mode then
-    vim.g.viewport_previous_mode = vim.g.viewport_active_mode
-  end
   -- Set the global variable for external plugins to query
   vim.g.viewport_active_mode = name
   emit_mode_changed(name)
@@ -57,7 +54,14 @@ function M.start(name)
   if mode_instance == nil then
     error(string.format("%s mode not initialized. Please call setup() first.", name))
   end
-  --
+
+  -- Stop any active mode
+  local prev_mode = vim.g.viewport_active_mode
+  if prev_mode then
+    vim.g.viewport_previous_mode = prev_mode
+    M.get_active_mode():stop()
+  end
+
   -- Set vim.g.viewport_active_mode for external plugins to query
   local old_post_start = mode_instance.config.post_start
   local old_post_stop = mode_instance.config.post_stop
@@ -66,9 +70,10 @@ function M.start(name)
     old_post_start(self)
   end
   mode_instance.config.post_stop = function(self)
-    if vim.g.viewport_previous_mode then
-      set_active_mode(vim.g.viewport_previous_mode)
-      vim.g.viewport_previous_mode = nil
+    -- Restore previous mode if any
+    if prev_mode then
+      clear_active_mode()
+      M.start(prev_mode)
     else
       clear_active_mode()
     end
