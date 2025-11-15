@@ -1,6 +1,5 @@
 local window = require('viewport.window')
 local mode = require('viewport.mode')
-local action = require('viewport.action')
 local registry = require('viewport.mode.registry')
 local mode_actions = require('viewport.mode.actions')
 
@@ -25,7 +24,6 @@ local WindowSelectorOpts = {
 -- @field opts WindowSelectorOpts Options for the selector
 -- @field on_select function Callback when window is selected
 -- @field popups table List of popup windows
--- @field selected_win Window|nil The selected window
 -- @field mode Mode The underlying mode instance
 local WindowSelectorMode = {}
 WindowSelectorMode.__index = WindowSelectorMode
@@ -52,7 +50,6 @@ function WindowSelectorMode.new(on_select, opts)
   self.opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
   self.on_select = on_select
   self.popups = {}
-  self.selected_win = nil
   self.should_restore_mappings_display = false
   return self
 end
@@ -90,7 +87,7 @@ function WindowSelectorMode:_create_popups()
 
       table.insert(self.popups, popup)
       keymaps[choice] = function(_, _)
-        self.selected_win = win
+        self.on_select(win)
       end
     end
   end
@@ -110,16 +107,20 @@ function WindowSelectorMode:pre_start()
   mode.Mode.pre_start(self)
 end
 
-function WindowSelectorMode:pre_stop()
+function WindowSelectorMode:execute_action(action)
   self:_close_popups()
-  mode.Mode.pre_stop(self)
+  -- Stop before executing action to avoid conflicts with nested modes and
+  -- popups
+  self:stop()
+  -- TODO: I would like to 'wait' for the action to complete before stopping.
+  -- Additionally, when the action is yet another mode, it's tricky because the
+  -- action calls start(), and the new mode is 'active', but I'd like to wait
+  -- for that mode to stop before considering the WindowSelectorMode to be
+  -- "done".
+  mode.Mode.execute_action(self, action)
 end
 
 function WindowSelectorMode:post_stop()
-  if self.selected_win then
-    self.on_select(self.selected_win)
-  end
-
   if self.should_restore_mappings_display then
     local current_mode = registry.get_active_mode()
     if current_mode then
@@ -128,7 +129,6 @@ function WindowSelectorMode:post_stop()
   end
 
   self.popups = {}
-  self.selected_win = nil
   self.should_restore_mappings_display = false
   mode.Mode.post_stop(self)
 end
@@ -149,7 +149,6 @@ end
 -- @field win Window The window to open the popup in
 -- @field choices Choice[] List of choices
 -- @field popup Window|nil The popup window
--- @field selected_action function|string|nil The selected action
 -- @field mode Mode The underlying mode instance
 local WindowChoicePickerMode = {}
 WindowChoicePickerMode.__index = WindowChoicePickerMode
@@ -177,7 +176,6 @@ function WindowChoicePickerMode.new(win, choices)
   self.win = win
   self.choices = choices
   self.popup = nil
-  self.selected_action = nil
   return self
 end
 
@@ -203,6 +201,13 @@ function WindowChoicePickerMode:_create_popup()
   })
 end
 
+function WindowChoicePickerMode:_close_popup()
+  if self.popup then
+    self.popup:delete_buffer()
+    self.popup = nil
+  end
+end
+
 function WindowChoicePickerMode:_create_mappings()
   -- Ensure stop mapping is present by default
   local mappings = {
@@ -210,7 +215,7 @@ function WindowChoicePickerMode:_create_mappings()
   }
   for _, choice in ipairs(self.choices) do
     mappings[choice.key] = function(_, _)
-      self.selected_action = choice.action
+      choice.action(self.win)
     end
   end
   return mappings
@@ -222,18 +227,16 @@ function WindowChoicePickerMode:pre_start()
   mode.Mode.pre_start(self)
 end
 
-function WindowChoicePickerMode:post_stop()
-  if self.popup then
-    self.popup:delete_buffer()
-    self.popup = nil
-  end
+function WindowChoicePickerMode:execute_action(action)
+  self:_close_popup()
+  -- Stop before executing action to avoid conflicts with nested modes and
+  -- popups
+  self:stop()
+  mode.Mode.execute_action(self, action)
+end
 
-  if self.selected_action then
-    if type(self.selected_action) == 'function' then
-      self.selected_action(self.win)
-    end
-    self.selected_action = nil
-  end
+function WindowChoicePickerMode:post_stop()
+  self:_close_popup()
   mode.Mode.post_stop(self)
 end
 

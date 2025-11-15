@@ -24,6 +24,7 @@ default_config.select_mode = {
       text = "[r]esize",
       action = function(win)
         win:focus()
+        -- Need a wait to wait for the mode to stop so the parent mode can know the action "completed"
         require('viewport.mode.registry').start('resize')
       end
     },

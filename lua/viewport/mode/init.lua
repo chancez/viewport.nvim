@@ -111,13 +111,7 @@ function Mode:_add_mapping(mode, lhs, rhs, opts)
     desc = "Viewport Action"
   end
   local mapping_opts = vim.tbl_extend('keep', { silent = true }, self.config.mapping_opts, opts or {}, { desc = desc })
-  local wrapped_rhs = function()
-    rhs(self, self.config.action_opts)
-    if self.config.stop_after_action then
-      self:stop()
-    end
-  end
-  self.keymap_manager:set(mode, lhs, wrapped_rhs, mapping_opts)
+  self.keymap_manager:set(mode, lhs, function() self:execute_action(rhs) end, mapping_opts)
 end
 
 -- Displays the current mappings in a popup window
@@ -221,6 +215,13 @@ end
 
 function Mode:post_stop()
   self.config.post_stop(self)
+end
+
+function Mode:execute_action(action)
+  action(self, self.config.action_opts)
+  if self.config.stop_after_action then
+    self:stop()
+  end
 end
 
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
