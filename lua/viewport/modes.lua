@@ -6,16 +6,30 @@ local M = {}
 
 local mode_change_autocmd = "ViewportModeChange"
 
--- Sets the active mode and emits an autocmd
--- @param name string|nil Mode name or nil if no active mode
-local function set_active_mode(name)
-  -- Set the global variable for external plugins to query
-  vim.g.viewport_active_mode = name
+local function emit_mode_changed(name)
   -- Emit an autocmd for mode change
   vim.api.nvim_exec_autocmds("User", {
     pattern = mode_change_autocmd,
     data = { mode = name },
   })
+end
+
+-- Sets the active mode and emits an autocmd
+-- @param name string|nil Mode name or nil if no active mode
+local function set_active_mode(name)
+  -- Check if mode is already set, and store previous mode
+  if vim.g.viewport_active_mode then
+    vim.g.viewport_previous_mode = vim.g.viewport_active_mode
+  end
+  -- Set the global variable for external plugins to query
+  vim.g.viewport_active_mode = name
+  emit_mode_changed(name)
+end
+
+-- Clears the active mode and emits an autocmd
+local function clear_active_mode()
+  vim.g.viewport_active_mode = nil
+  emit_mode_changed(nil)
 end
 
 -- Autocmd event name emitted on mode change
@@ -52,7 +66,12 @@ function M.start(name)
     old_post_start(self)
   end
   mode_instance.config.post_stop = function(self)
-    set_active_mode(nil)
+    if vim.g.viewport_previous_mode then
+      set_active_mode(vim.g.viewport_previous_mode)
+      vim.g.viewport_previous_mode = nil
+    else
+      clear_active_mode()
+    end
     old_post_stop(self)
   end
 
