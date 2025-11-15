@@ -1,15 +1,15 @@
 -- Central registry for mode instances
--- This module breaks the circular dependency between modes and presets
-local registry = {}
+local registry = {
+  _modes = {},
+  -- Autocmd event name emitted on mode change
+  mode_change_autocmd = "ViewportModeChange"
+}
 
-local M = {}
-
-local mode_change_autocmd = "ViewportModeChange"
 
 local function emit_mode_changed(name)
   -- Emit an autocmd for mode change
   vim.api.nvim_exec_autocmds("User", {
-    pattern = mode_change_autocmd,
+    pattern = registry.mode_change_autocmd,
     data = { mode = name },
   })
 end
@@ -29,28 +29,25 @@ local function clear_active_mode()
   emit_mode_changed(nil)
 end
 
--- Autocmd event name emitted on mode change
-M.mode_change_autocmd = mode_change_autocmd
-
 -- Registers a mode instance
 -- @param name string Mode name
 -- @param mode_instance Mode The mode instance to register
-function M.register(name, mode_instance)
-  registry[name] = mode_instance
+function registry.register(name, mode_instance)
+  registry._modes[name] = mode_instance
 end
 
 -- Gets a registered mode instance
 -- @param name string Mode name
 -- @return Mode|nil The registered mode instance or nil
-function M.get(name)
-  return registry[name]
+function registry.get(name)
+  return registry._modes[name]
 end
 
 -- Starts a registered mode
 -- @param name string Mode name
 -- @error Throws an error if mode is not registered
-function M.start(name)
-  local mode_instance = registry[name]
+function registry.start(name)
+  local mode_instance = registry.get(name)
   if mode_instance == nil then
     error(string.format("%s mode not initialized. Please call setup() first.", name))
   end
@@ -59,7 +56,7 @@ function M.start(name)
   local prev_mode = vim.g.viewport_active_mode
   if prev_mode then
     vim.g.viewport_previous_mode = prev_mode
-    M.get_active_mode():stop()
+    registry.get_active_mode():stop()
   end
 
   -- Set vim.g.viewport_active_mode for external plugins to query
@@ -73,7 +70,7 @@ function M.start(name)
     -- Restore previous mode if any
     if prev_mode then
       clear_active_mode()
-      M.start(prev_mode)
+      registry.start(prev_mode)
     else
       clear_active_mode()
     end
@@ -85,12 +82,12 @@ end
 
 -- Returns the currently active mode if any
 -- @return Mode|nil The active mode instance or nil
-function M.get_active_mode()
+function registry.get_active_mode()
   local active_mode_name = vim.g.viewport_active_mode
   if active_mode_name then
-    return registry[active_mode_name]
+    return registry.get(active_mode_name)
   end
   return nil
 end
 
-return M
+return registry

@@ -1,7 +1,7 @@
 local window = require('viewport.window')
 local mode = require('viewport.mode')
 local action = require('viewport.action')
-local modes = require('viewport.modes')
+local registry = require('viewport.mode.registry')
 local mode_actions = require('viewport.mode.actions')
 
 local select_actions = {}
@@ -99,7 +99,7 @@ function WindowSelectorMode:_create_popups()
 end
 
 function WindowSelectorMode:pre_start()
-  local current_mode = modes.get_active_mode()
+  local current_mode = registry.get_active_mode()
   if current_mode and current_mode:is_mappings_display_shown() then
     self.should_restore_mappings_display = true
     current_mode:close_mappings_display()
@@ -121,7 +121,7 @@ function WindowSelectorMode:post_stop()
   end
 
   if self.should_restore_mappings_display then
-    local current_mode = modes.get_active_mode()
+    local current_mode = registry.get_active_mode()
     if current_mode then
       current_mode:show_mappings_display()
     end

@@ -1,5 +1,5 @@
 local default_config = require('viewport.config')
-local modes = require('viewport.modes')
+local registry = require('viewport.mode.registry')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
 local select_actions = require('viewport.actions.select')
@@ -25,7 +25,7 @@ local function new_mode(name, mode_opts)
   mode_opts.mappings = mappings
 
   local new_m = mode.new(mode_opts)
-  modes.register(name, new_m)
+  registry.register(name, new_m)
   return new_m
 end
 
@@ -49,31 +49,31 @@ function M.setup(opts)
     display_mappings = opts.navigate_mode.display_mappings,
   })
 
-  modes.register('select', select_actions.new_window_selector_mode(
+  registry.register('select', select_actions.new_window_selector_mode(
     function(win)
       select_actions.new_window_choice_picker(win, opts.select_mode.choices)
     end
   ))
 
-  modes.register('swap', select_actions.new_swap_mode())
+  registry.register('swap', select_actions.new_swap_mode())
 end
 
 function M.start_resize_mode()
-  modes.start('resize')
+  registry.start('resize')
 end
 
 function M.start_navigate_mode()
-  modes.start('navigate')
+  registry.start('navigate')
 end
 
 function M.start_select_mode()
-  modes.start('select')
+  registry.start('select')
 end
 
 function M.start_swap_mode()
-  modes.start('swap')
+  registry.start('swap')
 end
 
-M.modes = modes
+M.mode_change_autocmd = registry.mode_change_autocmd
 
 return M

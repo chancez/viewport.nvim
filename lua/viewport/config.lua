@@ -24,7 +24,7 @@ default_config.select_mode = {
       text = "[r]esize",
       action = function(win)
         win:focus()
-        require('viewport.modes').start('resize')
+        require('viewport.mode.registry').start('resize')
       end
     },
     {
@@ -39,7 +39,7 @@ default_config.select_mode = {
       text = "[s]wap",
       action = function(win)
         win:focus()
-        require('viewport.modes').start('swap')
+        require('viewport.mode.registry').start('swap')
       end
     },
     {
@@ -84,7 +84,7 @@ default_config.select_mode = {
       text = '[Esc] - stop',
       action = function(_)
         -- TODO: Use mode_actions.stop
-        local current_mode = require('viewport.modes').get_active_mode()
+        local current_mode = require('viewport.mode.registry').get_active_mode()
         if current_mode then
           current_mode:stop()
         end

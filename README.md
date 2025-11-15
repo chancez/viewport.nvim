@@ -213,7 +213,7 @@ You can use this to trigger your status line to update:
 local grp = vim.api.nvim_create_augroup("viewport", { clear = true })
 vim.api.nvim_create_autocmd("User", {
   group = grp,
-  pattern = require('viewport').modes.mode_change_autocmd,
+  pattern = require('viewport').mode_change_autocmd,
   callback = function()
     require('lualine').refresh()
   end,
