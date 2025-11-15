@@ -2,6 +2,7 @@ local keymap = require('viewport.mode.keymap')
 local action = require('viewport.action')
 local window = require('viewport.window')
 local utils = require('viewport.utils')
+local extend = require('viewport.extend')
 
 local M = {}
 
@@ -49,7 +50,7 @@ local default_mode_opts = {
 -- @param config ModeConfig|nil Configuration for the mode
 -- @return Mode A new Mode instance
 function Mode.new(config)
-  config = vim.tbl_deep_extend('force', default_mode_opts, config or {})
+  config = extend.tbl_deep_extend('force', default_mode_opts, config or {})
   vim.validate("config", config, 'table')
   vim.validate("mappings", config.mappings, 'table')
   for mode, mappings in pairs(config.mappings) do

@@ -3,6 +3,7 @@ local modes = require('viewport.modes')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
 local select_actions = require('viewport.actions.select')
+local extend = require('viewport.extend')
 
 local M = {}
 
@@ -18,7 +19,7 @@ local function new_mode(name, mode_opts)
     -- Delete the preset key so it isnt treated as a mapping itself
     mappings.preset = nil
     -- User defined mappings override preset mappings
-    mappings = vim.tbl_deep_extend('force', preset, mappings)
+    mappings = extend.tbl_deep_extend('force', preset, mappings)
   end
 
   mode_opts.mappings = mappings
@@ -31,7 +32,7 @@ end
 -- Sets up the viewport plugin with the given options
 -- @param opts Config|nil Configuration options
 function M.setup(opts)
-  opts = vim.tbl_deep_extend('force', default_config, opts or {})
+  opts = extend.tbl_deep_extend('force', default_config, opts or {})
   -- Create and register modes
   new_mode('resize', {
     mappings = opts.resize_mode.mappings,
