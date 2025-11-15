@@ -1,6 +1,7 @@
 local default_config = require('viewport.config')
 local registry = require('viewport.mode.registry')
 local mode = require('viewport.mode')
+local modes = require('viewport.modes')
 local presets = require('viewport.presets')
 local select_actions = require('viewport.actions.select')
 local extend = require('viewport.extend')
@@ -49,13 +50,13 @@ function M.setup(opts)
     display_mappings = opts.navigate_mode.display_mappings,
   })
 
-  registry.register('select', select_actions.new_window_selector_mode(
+  registry.register('select', modes.WindowSelectorMode.new(
     function(win)
-      select_actions.new_window_choice_picker(win, opts.select_mode.choices)
+      modes.WindowChoicePickerMode.new(win, opts.select_mode.choices):start()
     end
   ))
 
-  registry.register('swap', select_actions.new_swap_mode())
+  registry.register('swap', modes.SwapWindowMode.new())
 end
 
 function M.start_resize_mode()
