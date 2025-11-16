@@ -209,13 +209,10 @@ function WindowChoicePickerMode:_close_popup()
 end
 
 function WindowChoicePickerMode:_create_mappings()
-  -- Ensure stop mapping is present by default
-  local mappings = {
-    ['<Esc>'] = mode_actions.stop,
-  }
+  local mappings = {}
   for _, choice in ipairs(self.choices) do
     mappings[choice.key] = function(_, _)
-      choice.action(self.win)
+      choice.action(self, self.win)
     end
   end
   return mappings
@@ -271,8 +268,29 @@ function SwapWindowMode.new(opts)
   return self
 end
 
+-- @class SelectMode
+local SelectMode = {}
+SelectMode.__index = SelectMode
+setmetatable(SelectMode, WindowSelectorMode)
+
+-- Creates a mode to select a window from the current tabpage. When the mode is
+-- started, a popup is opened above each window with a character to press to
+-- select that window. Once the character is pressed, the corresponding window
+-- has a ChoicePickerMode opened to select an action to perform on that window.
+function SelectMode.new(opts)
+  local self = WindowSelectorMode.new(
+    function(win)
+      WindowChoicePickerMode.new(win, opts.select_mode.choices):start()
+    end
+  )
+
+  setmetatable(self, SelectMode)
+  return self
+end
+
 modes.WindowSelectorMode = WindowSelectorMode
 modes.WindowChoicePickerMode = WindowChoicePickerMode
 modes.SwapWindowMode = SwapWindowMode
+modes.SelectMode = SelectMode
 
 return modes

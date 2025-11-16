@@ -22,7 +22,7 @@ default_config.select_mode = {
     {
       key = 'r',
       text = "[r]esize",
-      action = function(win)
+      action = function(_, win)
         win:focus()
         -- Need a wait to wait for the mode to stop so the parent mode can know the action "completed"
         require('viewport.mode.registry').start('resize')
@@ -31,14 +31,14 @@ default_config.select_mode = {
     {
       key = 'f',
       text = "[f]ocus",
-      action = function(win)
+      action = function(_, win)
         win:focus()
       end
     },
     {
       key = 's',
       text = "[s]wap",
-      action = function(win)
+      action = function(_, win)
         win:focus()
         require('viewport.mode.registry').start('swap')
       end
@@ -46,14 +46,14 @@ default_config.select_mode = {
     {
       key = 'c',
       text = "[c]lose",
-      action = function(win)
+      action = function(_, win)
         win:close()
       end
     },
     {
       key = 'o',
       text = "[o]nly",
-      action = function(win)
+      action = function(_, win)
         win:focus()
         vim.cmd('only')
       end
@@ -61,21 +61,21 @@ default_config.select_mode = {
     {
       key = 'h',
       text = "[h]orizontal split",
-      action = function(win)
+      action = function(_, win)
         win:split_horizontal(true)
       end
     },
     {
       key = 'v',
       text = "[v]ertical split",
-      action = function(win)
+      action = function(_, win)
         win:split_vertical(true)
       end
     },
     {
       key = 'm',
       text = "[m]aximize",
-      action = function(win)
+      action = function(_, win)
         win:focus()
         require('viewport.actions.zoom').maximize()
       end
@@ -83,12 +83,8 @@ default_config.select_mode = {
     {
       key = '<Esc>',
       text = '[Esc] - stop',
-      action = function(_)
-        -- TODO: Use mode_actions.stop
-        local current_mode = require('viewport.mode.registry').get_active_mode()
-        if current_mode then
-          current_mode:stop()
-        end
+      action = function(mode, _)
+        mode:stop()
       end,
     },
   }

@@ -50,11 +50,7 @@ function M.setup(opts)
     display_mappings = opts.navigate_mode.display_mappings,
   })
 
-  registry.register('select', modes.WindowSelectorMode.new(
-    function(win)
-      modes.WindowChoicePickerMode.new(win, opts.select_mode.choices):start()
-    end
-  ))
+  registry.register('select', modes.SelectMode.new(opts))
 
   registry.register('swap', modes.SwapWindowMode.new())
 end
