@@ -74,7 +74,7 @@ function Mode:start()
     return
   end
   self.active = true
-  self:pre_start()
+  self.config.pre_start(self)
 
   local modes = vim.tbl_keys(self.config.mappings)
   self.keymap_manager:save(modes)
@@ -201,22 +201,6 @@ function Mode:is_mappings_display_shown()
   return self.mappings_window ~= nil
 end
 
-function Mode:pre_start()
-  self.config.pre_start(self)
-end
-
-function Mode:post_start()
-  self.config.post_start(self)
-end
-
-function Mode:pre_stop()
-  self.config.pre_stop(self)
-end
-
-function Mode:post_stop()
-  self.config.post_stop(self)
-end
-
 function Mode:execute_action(action)
   action(self, self.config.action_opts)
   if self.config.stop_after_action then
@@ -226,10 +210,10 @@ end
 
 -- Stops the mode, restoring original key mappings and calling lifecycle hooks
 function Mode:stop()
-  self:pre_stop()
+  self.config.pre_stop(self)
   self:close_mappings_display()
   self.keymap_manager:restore()
-  self:post_stop()
+  self.config.post_stop(self)
   self.active = false
 end
 

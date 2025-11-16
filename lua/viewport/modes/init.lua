@@ -94,10 +94,17 @@ function WindowSelectorMode:_create_popups()
   return keymaps
 end
 
-function WindowSelectorMode:pre_start()
+function WindowSelectorMode:_close_popups()
+  for _, popup in ipairs(self.popups) do
+    popup:delete_buffer()
+  end
+  self.popups = {}
+end
+
+function WindowSelectorMode:start()
   local keymaps = self:_create_popups()
   self.config.mappings = { n = keymaps }
-  mode.Mode.pre_start(self)
+  mode.Mode.start(self)
 end
 
 function WindowSelectorMode:execute_action(action)
@@ -113,16 +120,9 @@ function WindowSelectorMode:execute_action(action)
   mode.Mode.execute_action(self, action)
 end
 
-function WindowSelectorMode:post_stop()
-  self.popups = {}
-  mode.Mode.post_stop(self)
-end
-
-function WindowSelectorMode:_close_popups()
-  for _, popup in ipairs(self.popups) do
-    popup:delete_buffer()
-  end
-  self.popups = {}
+function WindowSelectorMode:stop()
+  self:_close_popups()
+  mode.Mode.stop(self)
 end
 
 -- @class Choice
@@ -203,10 +203,10 @@ function WindowChoicePickerMode:_create_mappings()
   return mappings
 end
 
-function WindowChoicePickerMode:pre_start()
+function WindowChoicePickerMode:start()
   self:_create_popup()
   self.config.mappings = { n = self:_create_mappings() }
-  mode.Mode.pre_start(self)
+  mode.Mode.start(self)
 end
 
 function WindowChoicePickerMode:execute_action(action)
@@ -217,9 +217,9 @@ function WindowChoicePickerMode:execute_action(action)
   mode.Mode.execute_action(self, action)
 end
 
-function WindowChoicePickerMode:post_stop()
+function WindowChoicePickerMode:stop()
   self:_close_popup()
-  mode.Mode.post_stop(self)
+  mode.Mode.stop(self)
 end
 
 -- @class SwapWindowMode
