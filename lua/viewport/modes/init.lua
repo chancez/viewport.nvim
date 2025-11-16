@@ -50,7 +50,6 @@ function WindowSelectorMode.new(on_select, opts)
   self.opts = vim.tbl_extend('force', WindowSelectorOpts, opts or {})
   self.on_select = on_select
   self.popups = {}
-  self.should_restore_mappings_display = false
   return self
 end
 
@@ -96,12 +95,6 @@ function WindowSelectorMode:_create_popups()
 end
 
 function WindowSelectorMode:pre_start()
-  local current_mode = registry.get_active_mode()
-  if current_mode and current_mode:is_mappings_display_shown() then
-    self.should_restore_mappings_display = true
-    current_mode:close_mappings_display()
-  end
-
   local keymaps = self:_create_popups()
   self.config.mappings = { n = keymaps }
   mode.Mode.pre_start(self)
@@ -121,15 +114,7 @@ function WindowSelectorMode:execute_action(action)
 end
 
 function WindowSelectorMode:post_stop()
-  if self.should_restore_mappings_display then
-    local current_mode = registry.get_active_mode()
-    if current_mode then
-      current_mode:show_mappings_display()
-    end
-  end
-
   self.popups = {}
-  self.should_restore_mappings_display = false
   mode.Mode.post_stop(self)
 end
 
