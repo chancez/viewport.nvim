@@ -21,10 +21,6 @@ Mode.__index = Mode
 -- @field mapping_opts table Options to pass to vim.keymap.set
 -- @field stop_after_action boolean Whether to stop the mode after an action is performed
 -- @field display_mappings boolean Whether to display mappings in a popup when the mode starts
--- @field pre_start function Function called before mode starts. Receives the mode instance as parameter.
--- @field post_start function Function called after mode starts. Receives the mode instance as parameter.
--- @field pre_stop function Function called before mode stops. Receives the mode instance as parameter.
--- @field post_stop function Function called after mode stops. Receives the mode instance as parameter.
 
 -- Default configuration for modes
 -- @type ModeConfig
@@ -39,10 +35,6 @@ local default_mode_opts = {
   mapping_opts = {},
   stop_after_action = true,
   display_mappings = false,
-  pre_start = function(_) end,
-  post_start = function(_) end,
-  pre_stop = function(_) end,
-  post_stop = function(_) end,
 }
 
 -- Creates a new Mode instance
@@ -65,16 +57,17 @@ function Mode.new(config)
   self.keymap_manager = keymap.new()
   self.config = config
   self.mappings_window = nil
+  self.on_stop = nil
   return self
 end
 
 -- Starts the mode, activating key mappings and calling lifecycle hooks
-function Mode:start()
+function Mode:start(on_stop)
   if self.active then
     return
   end
   self.active = true
-  self.config.pre_start(self)
+  self.on_stop = on_stop
 
   local modes = vim.tbl_keys(self.config.mappings)
   self.keymap_manager:save(modes)
@@ -91,8 +84,6 @@ function Mode:start()
   if self.config.display_mappings then
     self:show_mappings_display()
   end
-
-  self.config.post_start(self)
 end
 
 -- Adds a new mapping to the mode
@@ -208,13 +199,15 @@ function Mode:execute_action(action)
   end
 end
 
--- Stops the mode, restoring original key mappings and calling lifecycle hooks
+-- Stops the mode, restoring original key mappings and calling on_stop
 function Mode:stop()
-  self.config.pre_stop(self)
   self:close_mappings_display()
   self.keymap_manager:restore()
-  self.config.post_stop(self)
+  if self.on_stop then
+    self.on_stop(self)
+  end
   self.active = false
+  self.on_stop = nil
 end
 
 M.Mode = Mode

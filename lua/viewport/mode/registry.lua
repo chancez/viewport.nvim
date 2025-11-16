@@ -46,7 +46,7 @@ end
 -- Starts a registered mode
 -- @param name string Mode name
 -- @error Throws an error if mode is not registered
-function registry.start(name)
+function registry.start(name, on_stop)
   local mode_instance = registry.get(name)
   if mode_instance == nil then
     error(string.format("%s mode not initialized. Please call setup() first.", name))
@@ -59,14 +59,11 @@ function registry.start(name)
     registry.get_active_mode():stop()
   end
 
-  -- Set vim.g.viewport_active_mode for external plugins to query
-  local old_post_start = mode_instance.config.post_start
-  local old_post_stop = mode_instance.config.post_stop
-  mode_instance.config.post_start = function(self)
-    set_active_mode(name)
-    old_post_start(self)
-  end
-  mode_instance.config.post_stop = function(self)
+  set_active_mode(name)
+  mode_instance:start(function(mode)
+    if on_stop then
+      on_stop(mode)
+    end
     -- Restore previous mode if any
     if prev_mode then
       clear_active_mode()
@@ -74,10 +71,7 @@ function registry.start(name)
     else
       clear_active_mode()
     end
-    old_post_stop(self)
-  end
-
-  mode_instance:start()
+  end)
 end
 
 -- Returns the currently active mode if any
