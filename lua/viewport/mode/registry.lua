@@ -74,6 +74,18 @@ function registry.start(name, on_stop)
   end)
 end
 
+-- Toggles a registered mode
+-- @param name string Mode name
+-- @error Throws an error if mode is not registered
+function registry.toggle(name)
+  local active_mode = registry.get_active_mode()
+  if active_mode and vim.g.viewport_active_mode == name then
+    active_mode:stop()
+  else
+    registry.start(name)
+  end
+end
+
 -- Returns the currently active mode if any
 -- @return Mode|nil The active mode instance or nil
 function registry.get_active_mode()
