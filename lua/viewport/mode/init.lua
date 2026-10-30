@@ -16,7 +16,7 @@ local Mode = {}
 Mode.__index = Mode
 
 -- @class ModeConfig
--- @field mappings table|nil Table of key mappings for the mode. Can be modified in pre_start hook for dynamic mappings.
+-- @field mappings table|nil Table of key mappings for the mode
 -- @field action_opts table Options to pass to action functions
 -- @field mapping_opts table Options to pass to vim.keymap.set
 -- @field stop_after_action boolean Whether to stop the mode after an action is performed
@@ -33,7 +33,7 @@ local default_mode_opts = {
   },
   action_opts = {},
   mapping_opts = {},
-  stop_after_action = true,
+  stop_after_action = false,
   display_mappings = false,
 }
 
@@ -58,10 +58,14 @@ function Mode.new(config)
   self.config = config
   self.mappings_window = nil
   self.on_stop = nil
+  self._reposition_mappings_display = utils.debounce(function(args)
+    self:_reposition_mappings_display_now(args)
+  end, 100)
   return self
 end
 
--- Starts the mode, activating key mappings and calling lifecycle hooks
+-- Starts the mode, activating key mappings
+-- @param on_stop function|nil Called with the mode once it stops
 function Mode:start(on_stop)
   if self.active then
     return
@@ -108,7 +112,7 @@ end
 -- Displays the current mappings in a popup window
 function Mode:show_mappings_display()
   -- TODO: Handle mode changes. Currently most modes are normal only, and esc exits the modes
-  local mappings = self.keymap_manager:get_keymaps().n
+  local mappings = vim.list_extend({}, self.keymap_manager:get_keymaps().n or {})
   local lines = {
     string.format(" %-10s | %s", "key", "desc")
   }
@@ -138,32 +142,32 @@ function Mode:show_mappings_display()
     },
   })
 
-  local current_win = window.new()
-  local debounce_update_window = utils.debounce(function(args)
-    -- Only update if the window that changed is the one we are tracking
-    if args.buf ~= current_win:get_buffer() then
-      return
-    end
-    if self.mappings_window then
-      current_win = window.new()
-      -- center of current window
-      self.mappings_window:set_position(
-      -- Centering requires taking into account the size of the popup
-        (current_win:height() - self.mappings_window:height()) / 2, -- row
-        (current_win:width() - self.mappings_window:width()) / 2,   -- col
-        'win',                                                      -- relative
-        current_win.id                                              -- win
-      )
-    end
-  end, 100)
+  self._mappings_display_win = window.new()
   -- Move the window when the active window changes, or when resized
   self.mapping_window_autocmd_id = vim.api.nvim_create_autocmd(
     { "WinLeave", "WinResized" },
     {
       callback = function(args)
-        debounce_update_window(args)
+        self._reposition_mappings_display(args)
       end,
     })
+end
+
+-- Centers the mappings display in the current window
+function Mode:_reposition_mappings_display_now(args)
+  -- Only update if the window that changed is the one we are tracking
+  if not self.mappings_window or args.buf ~= self._mappings_display_win:get_buffer() then
+    return
+  end
+  local current_win = window.new()
+  self._mappings_display_win = current_win
+  self.mappings_window:set_position(
+  -- Centering requires taking into account the size of the popup
+    (current_win:height() - self.mappings_window:height()) / 2, -- row
+    (current_win:width() - self.mappings_window:width()) / 2,   -- col
+    'win',                                                      -- relative
+    current_win.id                                              -- win
+  )
 end
 
 -- Closes the mappings display popup
@@ -194,20 +198,26 @@ end
 
 function Mode:execute_action(action)
   action(self, self.config.action_opts)
-  if self.config.stop_after_action then
+  -- The action may have stopped the mode itself
+  if self.config.stop_after_action and self.active then
     self:stop()
   end
 end
 
 -- Stops the mode, restoring original key mappings and calling on_stop
 function Mode:stop()
+  if not self.active then
+    return
+  end
+  -- Clear state before calling on_stop, so on_stop can start the mode again
+  self.active = false
+  local on_stop = self.on_stop
+  self.on_stop = nil
   self:close_mappings_display()
   self.keymap_manager:restore()
-  if self.on_stop then
-    self.on_stop(self)
+  if on_stop then
+    on_stop(self)
   end
-  self.active = false
-  self.on_stop = nil
 end
 
 M.Mode = Mode
