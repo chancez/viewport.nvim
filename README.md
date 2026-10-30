@@ -8,6 +8,7 @@ A modal window management plugin for Neovim that provides intuitive modes for re
 - **Navigate Mode**: Navigate and swap windows with vim-like keybindings
 - **Select Mode**: Choose windows and perform actions on them
 - **Swap Mode**: Swap the current window with another selected window
+- **Layouts**: Keep windows arranged side by side, stacked, or around a main window
 - **Preset Keymaps**: Pre-configured keybindings for common workflows
 - **Extensible**: Customize mappings and actions to fit your workflow
 
@@ -174,6 +175,44 @@ Start swap mode to swap the current window with another:
 require('viewport').start_swap_mode()
 ```
 
+### Layouts
+
+Layouts arrange the windows of a tabpage and keep them arranged as windows
+open and close. Each tabpage has its own layout, or none.
+
+```lua
+require('viewport').set_layout('tall')    -- Current window becomes the main window
+require('viewport').toggle_layout('tall')
+require('viewport').next_layout()
+require('viewport').set_layout(nil)       -- Stop arranging this tabpage
+```
+
+**Layouts:**
+- `horizontal` - All windows side by side
+- `vertical` - All windows stacked
+- `tall` - Main window on the left, the rest stacked on the right
+- `fat` - Main window on top, the rest side by side below
+
+Floating windows and special buffers like help and quickfix are left where
+they are. Use the `make_main` action to make the current window the main
+window, and `next_layout` to cycle layouts from a mode mapping.
+
+```lua
+require('viewport').setup({
+  layout = {
+    main_ratio = 0.6, -- Share of the tab for the main window in tall and fat (default: 0.5)
+    -- Extra layouts: function(wins, opts) arranging window ids, main first
+    layouts = {},
+    -- function(win_id) returning true to leave a window out
+    should_exclude_window = nil,
+  },
+})
+```
+
+The current tabpage's layout is in `vim.t.viewport_layout`, and a `User`
+autocmd with pattern `require('viewport').layout_change_autocmd` fires when it
+changes.
+
 ### User Commands
 
 You can also create user commands for convenience:
@@ -251,3 +290,4 @@ Actions can be accessed via `require('viewport.actions')`:
 - **Focus**: `focus_above`, `focus_below`, `focus_left`, `focus_right`
 - **Swap**: `swap_above`, `swap_below`, `swap_left`, `swap_right`, `swap_select`
 - **Select**: `select_window`
+- **Layout**: `make_main`, `next_layout`

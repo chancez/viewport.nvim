@@ -17,6 +17,18 @@ default_config.navigate_mode = {
   display_mappings = true,
 }
 
+default_config.layout = {
+  -- Fraction of the tab given to the main window in the tall and fat layouts
+  main_ratio = 0.5,
+  -- Extra layouts by name. Each is a function(wins, opts) that arranges a
+  -- list of window ids, main window first. See viewport.layout.arrange.
+  layouts = {},
+  -- Function taking a window id that returns true to leave the window out of
+  -- layouts. Defaults to excluding floats and special buffers like help and
+  -- quickfix.
+  should_exclude_window = nil,
+}
+
 default_config.select_mode = {
   choices = {
     {

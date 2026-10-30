@@ -1,5 +1,6 @@
 local default_config = require('viewport.config')
 local controller = require('viewport.mode.controller')
+local layout = require('viewport.layout')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
 local pick = require('viewport.pick')
@@ -10,6 +11,9 @@ local M = {}
 
 -- Autocmd pattern emitted when the active mode changes
 M.mode_change_autocmd = "ViewportModeChange"
+
+-- Autocmd pattern emitted when a tabpage's layout changes
+M.layout_change_autocmd = "ViewportLayoutChange"
 
 -- The controller tracking viewport's modes. The active mode name is mirrored
 -- to vim.g.viewport_active_mode for status lines.
@@ -65,6 +69,53 @@ function M.setup(opts)
     stop_after_action = false,
     display_mappings = opts.navigate_mode.display_mappings,
   })
+
+  -- The layout manager. The layout name is mirrored to vim.t.viewport_layout
+  -- for status lines.
+  M.layouts = layout.new({
+    layouts = opts.layout.layouts,
+    main_ratio = opts.layout.main_ratio,
+    should_exclude_window = opts.layout.should_exclude_window,
+    on_change = function(tab, name)
+      vim.t[tab].viewport_layout = name
+      vim.api.nvim_exec_autocmds("User", {
+        pattern = M.layout_change_autocmd,
+        data = { tab = tab, layout = name },
+      })
+    end,
+  })
+end
+
+-- Returns the layout manager, erroring if setup() has not been called
+local function layouts()
+  if not M.layouts then
+    error("viewport layouts not initialized. Please call setup() first.")
+  end
+  return M.layouts
+end
+
+-- Sets the layout of the current tabpage. The current window becomes the
+-- main window.
+-- @param name string|nil Layout name, or nil to stop arranging the tabpage
+function M.set_layout(name)
+  layouts():set(name)
+end
+
+-- Sets the layout of the current tabpage, or clears it if it is already set
+-- @param name string Layout name
+function M.toggle_layout(name)
+  layouts():toggle(name)
+end
+
+-- Switches the current tabpage to the next layout
+function M.next_layout()
+  layouts():next()
+end
+
+-- Returns the layout of the current tabpage, if any
+-- @return string|nil The layout name
+function M.get_layout()
+  return layouts():get()
 end
 
 function M.start_resize_mode()
