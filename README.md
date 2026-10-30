@@ -249,5 +249,5 @@ Actions can be accessed via `require('viewport.actions')`:
 
 - **Resize**: `resize_up`, `resize_down`, `resize_left`, `resize_right`, `relative_resize_*`
 - **Focus**: `focus_above`, `focus_below`, `focus_left`, `focus_right`
-- **Swap**: `swap_above`, `swap_below`, `swap_left`, `swap_right`
+- **Swap**: `swap_above`, `swap_below`, `swap_left`, `swap_right`, `swap_select`
 - **Select**: `select_window`

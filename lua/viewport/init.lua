@@ -1,9 +1,9 @@
 local default_config = require('viewport.config')
 local registry = require('viewport.mode.registry')
 local mode = require('viewport.mode')
-local modes = require('viewport.modes')
 local presets = require('viewport.presets')
-local select_actions = require('viewport.actions.select')
+local pick = require('viewport.pick')
+local swap_actions = require('viewport.actions.swap')
 local extend = require('viewport.extend')
 
 local M = {}
@@ -34,6 +34,7 @@ end
 -- @param opts Config|nil Configuration options
 function M.setup(opts)
   opts = extend.tbl_deep_extend('force', default_config, opts or {})
+  M.config = opts
   -- Create and register modes
   new_mode('resize', {
     mappings = opts.resize_mode.mappings,
@@ -49,10 +50,6 @@ function M.setup(opts)
     stop_after_action = false,
     display_mappings = opts.navigate_mode.display_mappings,
   })
-
-  registry.register('select', modes.SelectMode.new(opts))
-
-  registry.register('swap', modes.SwapWindowMode.new())
 end
 
 function M.start_resize_mode()
@@ -63,12 +60,14 @@ function M.start_navigate_mode()
   registry.start('navigate')
 end
 
+-- Picks a window, then an action from select_mode.choices to run on it
 function M.start_select_mode()
-  registry.start('select')
+  pick.window_action(M.config.select_mode.choices)
 end
 
+-- Picks a window to swap with the current window
 function M.start_swap_mode()
-  registry.start('swap')
+  swap_actions.swap_select()
 end
 
 M.mode_change_autocmd = registry.mode_change_autocmd

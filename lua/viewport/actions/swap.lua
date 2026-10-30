@@ -1,5 +1,6 @@
 local window = require('viewport.window')
 local focus = require('viewport.actions.focus')
+local pick = require('viewport.pick')
 local action = require('viewport.action')
 
 local swap_actions = {}
@@ -37,6 +38,22 @@ end
 function swap_actions.swap_right(_, _)
   if swap_window_direction("right") then
     focus.focus_right()
+  end
+end
+
+-- Picks another window from the current tabpage and swaps it with the current
+-- window.
+-- @param opts PickWindowOpts|nil Options for picking the window
+function swap_actions.swap_select(_, opts)
+  local current_win = window.new()
+  local other_win = pick.window(vim.tbl_extend('keep', {
+    -- Don't allow selecting the window being swapped
+    should_exclude_window = function(win_id)
+      return win_id == current_win.id
+    end,
+  }, opts or {}))
+  if other_win then
+    current_win:swap(other_win)
   end
 end
 
