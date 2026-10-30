@@ -1,5 +1,5 @@
 local default_config = require('viewport.config')
-local registry = require('viewport.mode.registry')
+local controller = require('viewport.mode.controller')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
 local pick = require('viewport.pick')
@@ -7,6 +7,21 @@ local swap_actions = require('viewport.actions.swap')
 local extend = require('viewport.extend')
 
 local M = {}
+
+-- Autocmd pattern emitted when the active mode changes
+M.mode_change_autocmd = "ViewportModeChange"
+
+-- The controller tracking viewport's modes. The active mode name is mirrored
+-- to vim.g.viewport_active_mode for status lines.
+M.controller = controller.new({
+  on_change = function(name)
+    vim.g.viewport_active_mode = name
+    vim.api.nvim_exec_autocmds("User", {
+      pattern = M.mode_change_autocmd,
+      data = { mode = name },
+    })
+  end,
+})
 
 -- Creates a new mode instance with the given name and options
 -- @param name string Name of the mode ('resize' or 'navigate')
@@ -26,7 +41,7 @@ local function new_mode(name, mode_opts)
   mode_opts.mappings = mappings
 
   local new_m = mode.new(mode_opts)
-  registry.register(name, new_m)
+  M.controller:register(name, new_m)
   return new_m
 end
 
@@ -53,11 +68,22 @@ function M.setup(opts)
 end
 
 function M.start_resize_mode()
-  registry.start('resize')
+  M.controller:start('resize')
 end
 
 function M.start_navigate_mode()
-  registry.start('navigate')
+  M.controller:start('navigate')
+end
+
+-- Stops the mode if it is active, otherwise starts it
+-- @param name string Mode name ('resize' or 'navigate')
+function M.toggle_mode(name)
+  M.controller:toggle(name)
+end
+
+-- Stops the active mode, if any
+function M.stop_mode()
+  M.controller:stop()
 end
 
 -- Picks a window, then an action from select_mode.choices to run on it
@@ -69,7 +95,5 @@ end
 function M.start_swap_mode()
   swap_actions.swap_select()
 end
-
-M.mode_change_autocmd = registry.mode_change_autocmd
 
 return M
