@@ -424,6 +424,28 @@ function Window:move(direction)
   vim.cmd(cmd)
 end
 
+-- Split directions accepted by nvim_win_set_config, by direction name
+local direction_to_split = {
+  up = "above",
+  down = "below",
+  left = "left",
+  right = "right",
+}
+
+-- Moves this window next to another window, keeping its id, buffer and
+-- window-local state.
+-- @param direction string Which side of other to place this window ("up", "down", "left", "right")
+-- @param other Window|number The window to place this window next to, or its id
+function Window:place(direction, other)
+  local split = direction_to_split[direction]
+  if not split then
+    error(string.format("Invalid direction '%s'. Valid directions are: %s", direction,
+      table.concat(vim.tbl_keys(direction_to_split), ", ")))
+  end
+  local other_id = type(other) == "number" and other or other.id
+  vim.api.nvim_win_set_config(self.id, { split = split, win = other_id })
+end
+
 -- Swaps the buffer in this window with a neighboring window in the specified direction
 -- @param direction string The direction of the window to swap with
 -- @return boolean True if the swap was successful, false if no neighbor exists
