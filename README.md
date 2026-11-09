@@ -194,6 +194,9 @@ require('viewport').set_layout(nil)       -- Stop arranging this tabpage
 - `tall` - Main window on the left, the rest stacked on the right
 - `fat` - Main window on top, the rest side by side below
 
+Setting the first layout on a tabpage saves its windows, and clearing the
+layout restores them. Windows opened in the meantime stay where they are.
+
 Floating windows and special buffers like help and quickfix are left where
 they are. Use the `make_main` action to make the current window the main
 window, and `next_layout` to cycle layouts from a mode mapping.

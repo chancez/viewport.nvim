@@ -1,4 +1,5 @@
 local arrange = require('viewport.layout.arrange')
+local snapshot = require('viewport.layout.snapshot')
 
 -- Built-in layouts, in the order next() cycles through them
 local builtin_order = { 'horizontal', 'vertical', 'tall', 'fat' }
@@ -49,7 +50,7 @@ function Manager.new(opts)
   self._arrange_opts = { main_ratio = opts.main_ratio or 0.5 }
   self._should_exclude_window = opts.should_exclude_window or default_should_exclude_window
   self._on_change = opts.on_change or function(_, _) end
-  -- Layout state by tabpage handle: { name, main, wins }
+  -- Layout state by tabpage handle: { name, main, wins, snapshot }
   self._tabs = {}
   self._augroup = nil
   self._pending = false
@@ -163,7 +164,8 @@ function Manager:_update_autocmds()
 end
 
 -- Sets the layout of a tabpage and arranges it. The current window becomes
--- the main window.
+-- the main window. Setting the first layout on a tabpage saves its windows,
+-- and clearing the layout restores them.
 -- @param name string|nil Layout name, or nil to stop arranging the tabpage
 -- @param tab number|nil Tabpage handle (defaults to the current tabpage)
 -- @error Throws an error if the layout does not exist
@@ -174,15 +176,28 @@ function Manager:set(name, tab)
     error(string.format("Unknown layout '%s'. Valid layouts are: %s", name, table.concat(self._order, ", ")))
   end
 
+  local previous = self._tabs[tab]
   if name then
-    local main = vim.api.nvim_tabpage_get_win(tab)
-    self._tabs[tab] = { name = name, main = main, wins = nil }
+    self._tabs[tab] = {
+      name = name,
+      main = vim.api.nvim_tabpage_get_win(tab),
+      wins = nil,
+      -- Keep the windows from before the first layout when switching layouts
+      snapshot = previous and previous.snapshot or snapshot.take(tab),
+    }
   else
     self._tabs[tab] = nil
   end
   self:_update_autocmds()
   self._on_change(tab, name)
-  self:apply(tab, true)
+  if name then
+    self:apply(tab, true)
+  elseif previous then
+    local ok, err = pcall(snapshot.restore, previous.snapshot)
+    if not ok then
+      vim.notify(string.format("viewport: restoring windows failed: %s", err), vim.log.levels.WARN)
+    end
+  end
 end
 
 -- Returns the layout of a tabpage, if any

@@ -66,9 +66,36 @@ spec['clearing the layout stops rearranging'] = function()
   local viewport = setup()
   viewport.set_layout('horizontal')
   viewport.set_layout(nil)
+  local main = vim.api.nvim_get_current_win()
   vim.cmd('split')
+  local new = vim.api.nvim_get_current_win()
   flush()
-  assert_eq('col', vim.fn.winlayout()[1])
+  assert_eq({ 'col', leaves({ new, main }) }, vim.fn.winlayout())
+end
+
+spec['clearing the layout restores the windows from before the first layout'] = function()
+  local viewport = setup()
+  vim.cmd('vsplit | split')
+  vim.api.nvim_win_set_width(0, 15)
+  local before = { vim.fn.winlayout(), vim.fn.winrestcmd() }
+  viewport.set_layout('tall')
+  viewport.set_layout('horizontal')
+  flush()
+  viewport.set_layout(nil)
+  assert_eq(before, { vim.fn.winlayout(), vim.fn.winrestcmd() })
+end
+
+spec['clearing the layout keeps windows opened since'] = function()
+  local viewport = setup()
+  vim.cmd('vsplit')
+  local w = vim.api.nvim_tabpage_list_wins(0)
+  viewport.set_layout('vertical')
+  vim.cmd('split')
+  local new = vim.api.nvim_get_current_win()
+  flush()
+  viewport.set_layout(nil)
+  -- The restored windows return to their row, and the new window stays below them
+  assert_eq({ 'col', { { 'row', leaves(w) }, { 'leaf', new } } }, vim.fn.winlayout())
 end
 
 spec['each tabpage has its own layout'] = function()
