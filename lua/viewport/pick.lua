@@ -94,13 +94,19 @@ end
 -- @field text string Text to display for the choice
 -- @field action function Called with the Window when the choice is selected
 
+-- @class PickChoiceOpts
+-- @field prompt string|nil First line of the popup (default "Choose action:")
+-- @field title string|nil Title of the popup (default "actions")
+
 -- Opens a popup in win listing choices, and waits for one to be pressed.
 -- @param win Window The window to open the popup in
 -- @param choices Choice[] List of choices to present
+-- @param opts PickChoiceOpts|nil Options for the popup
 -- @return Choice|nil The choice picked, or nil if cancelled
-function pick.choice(win, choices)
+function pick.choice(win, choices, opts)
   vim.validate("choices", choices, 'table')
-  local lines = { "Choose action:" }
+  opts = vim.tbl_extend('force', { prompt = "Choose action:", title = "actions" }, opts or {})
+  local lines = { opts.prompt }
   for _, choice in ipairs(choices) do
     table.insert(lines, choice.text)
   end
@@ -117,7 +123,7 @@ function pick.choice(win, choices)
       config = {
         width = width,
         height = #lines,
-        title = "actions",
+        title = opts.title,
         title_pos = "center",
       },
     }),
