@@ -58,6 +58,9 @@ end
 
 function Manager:_add_layout(name, fn)
   vim.validate("layout " .. name, fn, 'function')
+  if name == 'none' then
+    error("'none' is reserved for clearing the layout and cannot be a layout name")
+  end
   if not self._layouts[name] then
     table.insert(self._order, name)
   end

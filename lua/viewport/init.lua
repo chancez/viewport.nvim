@@ -4,6 +4,7 @@ local layout = require('viewport.layout')
 local mode = require('viewport.mode')
 local presets = require('viewport.presets')
 local pick = require('viewport.pick')
+local window = require('viewport.window')
 local swap_actions = require('viewport.actions.swap')
 local extend = require('viewport.extend')
 
@@ -116,6 +117,55 @@ end
 -- @return string|nil The layout name
 function M.get_layout()
   return layouts():get()
+end
+
+-- Assigns each name the first of its characters not already taken
+-- @param names string[] Names to assign keys to
+-- @return table<string, string> Key by name
+local function assign_keys(names)
+  local taken = {}
+  local keys = {}
+  for _, name in ipairs(names) do
+    for char in name:gmatch('.') do
+      if not taken[char] then
+        taken[char] = true
+        keys[name] = char
+        break
+      end
+    end
+  end
+  return keys
+end
+
+-- Opens a popup listing the layouts and sets the one picked on the current
+-- tabpage. Picking none clears the layout.
+function M.pick_layout()
+  local names = vim.list_extend(layouts():names(), { 'none' })
+  local keys = assign_keys(names)
+  local current = M.get_layout() or 'none'
+  local choices = {}
+  for _, name in ipairs(names) do
+    local key = keys[name]
+    if key then
+      local start = name:find(key, 1, true)
+      local text = name:sub(1, start - 1) .. '[' .. key .. ']' .. name:sub(start + 1)
+      if name == current then
+        text = text .. ' (current)'
+      end
+      table.insert(choices, {
+        key = key,
+        text = text,
+        action = function(_)
+          M.set_layout(name ~= 'none' and name or nil)
+        end,
+      })
+    end
+  end
+
+  local choice = pick.choice(window.new(), choices, { prompt = 'Choose layout:', title = 'layout' })
+  if choice then
+    choice.action()
+  end
 end
 
 function M.start_resize_mode()
