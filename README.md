@@ -184,6 +184,7 @@ open and close. Each tabpage has its own layout, or none.
 require('viewport').set_layout('tall')    -- Current window becomes the main window
 require('viewport').toggle_layout('tall')
 require('viewport').next_layout()
+require('viewport').pick_layout()         -- Choose a layout from a popup
 require('viewport').set_layout(nil)       -- Stop arranging this tabpage
 ```
 
@@ -225,6 +226,19 @@ end, { desc = 'Start resize mode' })
 vim.api.nvim_create_user_command('NavigateMode', function()
   require('viewport').start_navigate_mode()
 end, { desc = 'Start navigate mode' })
+```
+
+`viewport.commands` provides handlers for commands that take arguments. For
+example, `:ViewportLayout tall` sets a layout, `:ViewportLayout none` clears
+it, and `:ViewportLayout` opens the layout picker:
+
+```lua
+local layout_cmd = require('viewport.commands').layout
+vim.api.nvim_create_user_command('ViewportLayout', layout_cmd.run, {
+  nargs = '?',
+  complete = layout_cmd.complete,
+  desc = 'Set the layout of the current tabpage',
+})
 ```
 
 ### Integration with Status Lines
